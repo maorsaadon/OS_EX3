@@ -36,7 +36,7 @@ void serverA(int serverPort)
     struct sockaddr_in serverAddress = {0}, clientAddress = {0};
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
-    serverAddress.sin_port = htons(serverPort);
+    serverAddress.sin_port = serverPort;
 
     // Bind socket to address and port
     int bindResult = bind(listeningSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress));

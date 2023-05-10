@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
             }
             client = 1;
             serverIp = argv[++i];
-            serverPort = atoi(argv[++i]);
+            serverPort = htons(argv[++i]);
             continue;
         }
         if (!strcmp(token, "-s"))
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
                 return -1;
             }
             server = 1;
-            serverPort = atoi(argv[++i]);
+            serverPort = htons(argv[++i]);
             continue;
         }
         if (!strcmp(token, "-p"))

@@ -7,58 +7,87 @@
 #define FILE_NAME "file.txt"
 #define FIFO_NAME "myfifo"
 
-//-------------------------------------------------------------
-int s_ipv4_tcp(int serverPort)
+int s_ipv4_tcp(int serverPort, int quiet)
 {
-    int server_socket, client_socket, err;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t client_addr_len;
-    char buffer[1024];
+    // Create socket
+    int serverFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverFd == -1)
+    {
+        if (quiet == 1)
+            printf("Could not create socket : %d", errno);
+        exit(-1);
+    }
+    else if (quiet == 1)
+        printf("New socket opened\n");
+
+    int enableReuse = 1;
+    int ret = setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
+    if (ret < 0)
+    {
+        if (quiet == 1)
+            printf("setsockopt() failed with error code : %d", errno);
+        exit(-1);
+    }
+
+    // Prepare sockaddr_in structure
+    struct sockaddr_in serverAddress = {0}, clientAddress = {0};
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    serverAddress.sin_port = serverPort;
+
+    // Bind socket to address and port
+    int bindResult = bind(serverFd, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+    if (bindResult == -1)
+    {
+        if (quiet == 1)
+            printf("Bind failed with error code : %d", errno);
+        close(serverFd);
+        exit(-1);
+    }
+    else if (quiet == 1)
+        printf("executed Bind() successfully\n");
+
+    // Listen for incoming connections
+    int listenResult = listen(serverFd, 1);
+    if (listenResult == -1)
+    {
+        if (quiet == 1)
+            printf("listen() failed with error code : %d", errno);
+        close(serverFd);
+        exit(-1);
+    }
+    else if (quiet == 1)
+        printf("Waiting for incoming TCP-connections...\n");
+
+    socklen_t len_clientAddress = {0};
+    len_clientAddress = sizeof(clientAddress);
+    int clientFd = accept(serverFd, (struct sockaddr *)&clientAddress, &len_clientAddress);
+    if (clientFd == -1)
+    {
+        if (quiet == 1)
+            printf("listen failed with error code : %d", errno);
+        close(clientFd);
+        exit(-1);
+    }
+    else if (quiet == 1)
+        printf("A new client connection accepted\n");
+
+    char buffer[1024] = {0};
     FILE *fp;
 
-    server_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_socket == -1)
-    {
-        perror("socket");
-        exit(1);
-    }
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(serverPort);
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    memset(&(server_addr.sin_zero), '\0', 8);
-    err = bind(server_socket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr));
-    if (err == -1)
-    {
-        perror("bind");
-        exit(1);
-    }
-
-    err = listen(server_socket, 1);
-    if (err == -1)
-    {
-        perror("listen");
-        exit(1);
-    }
-    client_addr_len = sizeof(struct sockaddr);
-    client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &client_addr_len);
-    if (client_socket == -1)
-    {
-        perror("accept");
-        exit(1);
-    }
-
-    memset(buffer, 0, sizeof(buffer));
-    fp = fdopen(client_socket, "r");
+    fp = fdopen(clientFd, "r");
     if (fp == NULL)
     {
-        perror("fdopen");
+        if (quiet == 1)
+            printf("fdopen failed with error code : %d", errno);
         exit(1);
     }
 
     FILE *output_file = fopen("ipv4_tcp.txt", "w");
     if (output_file == NULL)
     {
-        perror("fopen");
+        if (quiet == 1)
+            printf("fopen failed with error code : %d", errno);
         exit(1);
     }
 
@@ -69,55 +98,88 @@ int s_ipv4_tcp(int serverPort)
     }
 
     fclose(fp);
-    close(client_socket);
-    close(server_socket);
+    close(clientFd);
+    close(serverFd);
     return 0;
 }
-//-------------------------------------------------------------
 
-void s_ipv6_tcp(int serverPort)
+void s_ipv6_tcp(int serverPort, int quiet)
 {
-    int server_socket, client_socket, err;
-    struct sockaddr_in6 server_addr, client_addr;
-    socklen_t client_addr_len;
-    char buffer[1024];
-    FILE *fp;
-    unsigned long long checksum = 0;
-    server_socket = socket(AF_INET6, SOCK_STREAM, 0);
-    if (server_socket == -1)
+    // Create socket
+    int serverFd = socket(AF_INET6, SOCK_STREAM, 0);
+    if (serverFd == -1)
     {
-        perror("socket");
-        exit(1);
+        if (quiet == 1)
+            printf("Could not create socket : %d", errno);
+        exit(-1);
     }
-    server_addr.sin6_family = AF_INET6;
-    server_addr.sin6_port = htons(serverPort);
-    server_addr.sin6_addr = in6addr_any;
-    err = bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
-    if (err == -1)
+    else if (quiet == 1)
+        printf("New socket opened\n");
+
+    int enableReuse = 1;
+    int ret = setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
+    if (ret < 0)
     {
-        perror("bind");
-        exit(1);
+        if (quiet == 1)
+            printf("setsockopt() failed with error code : %d", errno);
+        exit(-1);
     }
-    err = listen(server_socket, 1);
-    if (err == -1)
+
+    // Prepare sockaddr_in structure
+    struct sockaddr_in6 serverAddress = {0}, clientAddress = {0};
+    serverAddress.sin6_family = AF_INET6;
+    serverAddress.sin6_port = serverPort;
+    serverAddress.sin6_addr = in6addr_any;
+
+    // Bind socket to address and port
+    int bindResult = bind(serverFd, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+    if (bindResult == -1)
     {
-        perror("listen");
-        exit(1);
+        if (quiet == 1)
+            printf("Bind failed with error code : %d", errno);
+        close(serverFd);
+        exit(-1);
     }
-    client_addr_len = sizeof(struct sockaddr_in6);
-    client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &client_addr_len);
-    if (client_socket == -1)
+    else if (quiet == 1)
+        printf("executed Bind() successfully\n");
+
+    // Listen for incoming connections
+    int listenResult = listen(serverFd, 1);
+    if (listenResult == -1)
     {
-        perror("accept");
-        exit(1);
+        if (quiet == 1)
+            printf("listen() failed with error code : %d", errno);
+        close(serverFd);
+        exit(-1);
     }
+    else if (quiet == 1)
+        printf("Waiting for incoming TCP-connections...\n");
+
+    socklen_t len_clientAddress = {0};
+    len_clientAddress = sizeof(struct sockaddr_in6);
+    int clientFd = accept(serverFd, (struct sockaddr *)&clientAddress, &len_clientAddress);
+    if (clientFd == -1)
+    {
+        if (quiet == 1)
+            printf("listen failed with error code : %d", errno);
+        close(clientFd);
+        exit(-1);
+    }
+    else if (quiet == 1)
+        printf("A new client connection accepted\n");
+
     char ip_str[INET6_ADDRSTRLEN];
-    inet_ntop(AF_INET6, &client_addr.sin6_addr, ip_str, INET6_ADDRSTRLEN);
-    memset(buffer, 0, sizeof(buffer));
-    fp = fdopen(client_socket, "r");
+    inet_ntop(AF_INET6, &clientAddress.sin6_addr, ip_str, INET6_ADDRSTRLEN);
+
+    unsigned long long checksum = 0;
+    char buffer[1024] = {0};
+    FILE *fp;
+
+    fp = fdopen(clientFd, "r");
     if (fp == NULL)
     {
-        perror("fdopen");
+        if (quiet == 1)
+            printf("fdopen failed with error code : %d", errno);
         exit(1);
     }
 
@@ -132,36 +194,57 @@ void s_ipv6_tcp(int serverPort)
     }
 
     fclose(fp);
-    close(client_socket);
-    close(server_socket);
+    close(clientFd);
+    close(serverFd);
 }
 
-//-----------------------------------------------------------------------------
-
-int s_ipv4_udp(int serverPort)
+int s_ipv4_udp(int serverPort, int quiet)
 {
-    int server_socket, err;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t client_addr_len;
+    // Create socket
+    int serverFd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (serverFd == -1)
+    {
+        if (quiet == 1)
+            printf("Could not create socket : %d", errno);
+        exit(-1);
+    }
+    else if (quiet == 1)
+        printf("New socket opened\n");
+
+    int enableReuse = 1;
+    int ret = setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
+    if (ret < 0)
+    {
+        if (quiet == 1)
+            printf("setsockopt() failed with error code : %d", errno);
+        exit(-1);
+    }
+
+    // Prepare sockaddr_in structure
+    struct sockaddr_in serverAddress = {0}, clientAddress = {0};
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    serverAddress.sin_port = serverPort;
+
+    memset(&(serverAddress.sin_zero), '\0', 8);
+    // Bind socket to address and port
+    int bindResult = bind(serverFd, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+    if (bindResult == -1)
+    {
+        if (quiet == 1)
+            printf("Bind failed with error code : %d", errno);
+        close(serverFd);
+        exit(-1);
+    }
+    else if (quiet == 1)
+        printf("executed Bind() successfully\n");
+
     char buffer[1024];
-    server_socket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (server_socket == -1)
-    {
-        perror("socket");
-        exit(1);
-    }
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(serverPort);
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    memset(&(server_addr.sin_zero), '\0', 8);
-    err = bind(server_socket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr));
-    if (err == -1)
-    {
-        perror("bind");
-        exit(1);
-    }
+    socklen_t len_clientAddress = {0};
+    len_clientAddress = sizeof(clientAddress);
+
     struct pollfd fds[MAX_EVENTS];
-    fds[0].fd = server_socket;
+    fds[0].fd = serverFd;
     fds[0].events = POLLIN;
     while (1)
     {
@@ -173,17 +256,17 @@ int s_ipv4_udp(int serverPort)
         }
         if (fds[0].revents & POLLIN)
         {
-            memset(buffer, 0, sizeof(buffer));
-            client_addr_len = sizeof(struct sockaddr);
-            err = recvfrom(server_socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&client_addr, &client_addr_len);
-            if (err == -1)
+            ssize_t num_bytes = recvfrom(serverFd, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddress, &len_clientAddress);
+            if (num_bytes == -1)
             {
-                perror("recvfrom");
-                exit(1);
+                if (quiet == 1)
+                    printf("recv failed with error code : %d", errno);
+                exit(-1);
             }
-            if (strcmp(buffer, "exit\n") == 0)
+
+            if (!strcmp(buffer, "exit\n"))
             {
-                close(server_socket);
+                close(serverFd);
                 return 0;
             }
             else
@@ -191,19 +274,22 @@ int s_ipv4_udp(int serverPort)
                 FILE *fp = fopen("ipv4_udp.txt", "ab");
                 if (fp == NULL)
                 {
-                    perror("fopen");
+                    if (quiet == 1)
+                        printf("fopen failed with error code : %d", errno);
                     exit(1);
                 }
+
                 int bytes_received = 0;
                 int total_bytes_received = 0;
-                int max_bytes = 104857600; // 100MB
+                int max_bytes = 100 * 1024 * 1024; // 100MB
                 while (bytes_received == 0)
                 {
-                    bytes_received = recvfrom(server_socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&client_addr, &client_addr_len);
+                    bytes_received = recvfrom(serverFd, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddress, &len_clientAddress);
                     if (bytes_received == -1)
                     {
-                        perror("recvfrom");
-                        exit(1);
+                        if (quiet == 1)
+                            printf("recv failed with error code : %d", errno);
+                        exit(-1);
                     }
                     fwrite(buffer, bytes_received, 1, fp);
                     total_bytes_received += bytes_received;
@@ -221,142 +307,173 @@ int s_ipv4_udp(int serverPort)
     return 0;
 }
 
-//--------------------------------------------------------------------------
-
-int s_ipv6_udp(int serverPort)
+int s_ipv6_udp(int serverPort, int quiet)
 {
-    int server_socket, err;
-    struct sockaddr_in6 server_addr, client_addr;
-    socklen_t client_addr_len;
-    char buffer[1024];
 
-    server_socket = socket(AF_INET6, SOCK_DGRAM, 0);
-    if (server_socket == -1)
+    int serverFd = socket(AF_INET6, SOCK_DGRAM, 0);
+    if (serverFd == -1)
     {
-        perror("socket");
-        exit(1);
+        if (quiet == 1)
+            printf("Could not create socket : %d", errno);
+        exit(-1);
+    }
+    else if (quiet == 1)
+        printf("New socket opened\n");
+
+    int enableReuse = 1;
+    int ret = setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
+    if (ret < 0)
+    {
+        if (quiet == 1)
+            printf("setsockopt() failed with error code : %d", errno);
+        exit(-1);
     }
 
-    server_addr.sin6_family = AF_INET6;
-    server_addr.sin6_port = htons(serverPort);
-    server_addr.sin6_addr = in6addr_any;
+    struct sockaddr_in6 serverAddress = {0}, clientAddress = {0};
+    serverAddress.sin6_family = AF_INET6;
+    serverAddress.sin6_port = serverPort;
+    serverAddress.sin6_addr = in6addr_any;
 
-    err = bind(server_socket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr_in6));
-    if (err == -1)
+    int bindResult = bind(serverFd, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in6));
+    if (bindResult == -1)
     {
-        perror("bind");
-        exit(1);
+        if (quiet == 1)
+            printf("Bind failed with error code : %d", errno);
+        close(serverFd);
+        exit(-1);
     }
+    else if (quiet == 1)
+        printf("executed Bind() successfully\n");
 
     struct pollfd fds[MAX_EVENTS];
-    fds[0].fd = server_socket;
+    fds[0].fd = serverFd;
     fds[0].events = POLLIN;
 
+    char buffer[1024] = {0};
+    socklen_t len_clientAddress = {0};
+    len_clientAddress = sizeof(struct sockaddr_in6);
     int running = 1;
-    FILE *new_file = fopen("ipv6_udp.txt", "w");
-    if (new_file == NULL)
+
+    FILE *fp = fopen("ipv6_udp.txt", "w");
+    if (fp == NULL)
     {
-        perror("fopen");
+        if (quiet == 1)
+            printf("fopen failed with error code : %d", errno);
         exit(1);
     }
 
     while (running)
     {
-        int ret = poll(fds, MAX_EVENTS, -1);
-        if (ret == -1)
+        int pull = poll(fds, MAX_EVENTS, -1);
+        if (pull == -1)
         {
-            perror("poll");
-            exit(1);
+            if (quiet == 1)
+                printf("Pull failed with error code : %d", errno);
+            exit(-1);
         }
 
         if (fds[0].revents & POLLIN)
         {
-            memset(buffer, 0, sizeof(buffer));
-            client_addr_len = sizeof(struct sockaddr_in6);
-            err = recvfrom(server_socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&client_addr, &client_addr_len);
-            if (err == -1)
+
+            int bytes_received = recvfrom(serverFd, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddress, &len_clientAddress);
+            if (bytes_received == -1)
             {
-                perror("recvfrom");
-                exit(1);
+                if (quiet == 1)
+                    printf("recv failed with error code : %d", errno);
+                exit(-1);
             }
 
-            fwrite(buffer, sizeof(char), err, new_file);
+            fwrite(buffer, sizeof(char), bytes_received, fp);
 
-            if (ftell(new_file) >= 100000000)
-            {
+            if (ftell(fp) >= 100000000)
                 running = 0;
-            }
 
-            if (strcmp(buffer, "exit\n") == 0)
-            {
+            if (!strcmp(buffer, "exit\n"))
                 running = 0;
-            }
         }
     }
 
-    fclose(new_file);
-    close(server_socket);
+    fclose(fp);
+    close(serverFd);
     return 0;
 }
 
-//-----------------------------------------------------
-
-int s_uds_dgram()
+int s_uds_dgram(int quiet)
 {
-    int server_socket, err;
-    struct sockaddr_un server_addr, client_addr;
-    socklen_t client_addr_len;
-    char buffer[1024];
-    server_socket = socket(AF_UNIX, SOCK_DGRAM, 0);
-    if (server_socket == -1)
+    int serverFd = socket(AF_UNIX, SOCK_DGRAM, 0);
+    if (serverFd == -1)
     {
-        perror("socket");
-        exit(1);
+        if (quiet == 1)
+            printf("Could not create socket : %d", errno);
+        exit(-1);
     }
+    else if (quiet == 1)
+        printf("New socket opened\n");
+
+    int enableReuse = 1;
+    int ret = setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
+    if (ret < 0)
+    {
+        if (quiet == 1)
+            printf("setsockopt() failed with error code : %d", errno);
+        exit(-1);
+    }
+
+    struct sockaddr_un serverAddress = {0}, clientAddress = {0};
     unlink(SOCKET_PATH);
-    server_addr.sun_family = AF_UNIX;
-    strncpy(server_addr.sun_path, SOCKET_PATH, sizeof(server_addr.sun_path) - 1);
-    err = bind(server_socket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr_un));
-    if (err == -1)
+    serverAddress.sun_family = AF_UNIX;
+    strncpy(serverAddress.sun_path, SOCKET_PATH, sizeof(serverAddress.sun_path) - 1);
+
+    int bindResult = bind(serverFd, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_un));
+    if (bindResult == -1)
     {
-        perror("bind");
-        exit(1);
+        if (quiet == 1)
+            printf("Bind failed with error code : %d", errno);
+        close(serverFd);
+        exit(-1);
     }
+    else if (quiet == 1)
+        printf("executed Bind() successfully\n");
+
     struct pollfd fds[MAX_EVENTS];
-    fds[0].fd = server_socket;
+    fds[0].fd = serverFd;
     fds[0].events = POLLIN;
+
+    char buffer[1024];
+    socklen_t len_clientAddress = {0};
+    len_clientAddress = sizeof(struct sockaddr_un);
+
     while (1)
     {
-        int ret = poll(fds, MAX_EVENTS, -1);
-        if (ret == -1)
+        int pull = poll(fds, MAX_EVENTS, -1);
+        if (pull == -1)
         {
-            perror("poll");
-            exit(1);
+            if (quiet == 1)
+                printf("Pull failed with error code : %d", errno);
+            exit(-1);
         }
         if (fds[0].revents & POLLIN)
         {
-            memset(buffer, 0, sizeof(buffer));
-            client_addr_len = sizeof(struct sockaddr_un);
-            err = recvfrom(server_socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&client_addr, &client_addr_len);
-            if (err == -1)
+            int bytes_received = recvfrom(serverFd, buffer, sizeof(buffer), 0, (struct sockaddr *)&clientAddress, &len_clientAddress);
+            if (bytes_received == -1)
             {
-                perror("recvfrom");
-                exit(1);
+                if (quiet == 1)
+                    printf("recv failed with error code : %d", errno);
+                exit(-1);
             }
+
             if (strcmp(buffer, "exit\n") == 0)
             {
                 break;
             }
         }
     }
-    close(server_socket);
+    close(serverFd);
     unlink(SOCKET_PATH);
     return 0;
 }
 
-//--------------------------------------------------------
-
-int s_uds_stream()
+int s_uds_stream(int quiet)
 {
     int server_socket, client_socket, err;
     struct sockaddr_un server_addr, client_addr;
@@ -428,9 +545,7 @@ int s_uds_stream()
     return 0;
 }
 
-//-------------------------------------------------------
-
-int s_mmap(int serverPort)
+int s_mmap(int serverPort, int quiet)
 {
 
     struct sockaddr_in serv_addr, client_addr;
@@ -445,7 +560,7 @@ int s_mmap(int serverPort)
     memset((char *)&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(serverPort);
+    serv_addr.sin_port = serverPort;
     if (bind(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
         perror("bind");
@@ -480,9 +595,8 @@ int s_mmap(int serverPort)
     close(sockfd);
     return 0;
 }
-//--------------------------------------------------------------
 
-int s_pipe()
+int s_pipe(int quiet)
 {
 
     int fd;
@@ -515,84 +629,111 @@ int s_pipe()
 void serverB(int serverPort, int quiet)
 {
 
-    int server_fd, client_fd;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t addr_len;
+    // Create socket
+    int serverFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverFd == -1)
+    {
+        if (quiet == 1)
+            printf("Could not create socket : %d", errno);
+        exit(-1);
+    }
+    else if (quiet == 1)
+        printf("New socket opened\n");
+
+    int enableReuse = 1;
+    int ret = setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
+    if (ret < 0)
+    {
+        if (quiet == 1)
+            printf("setsockopt() failed with error code : %d", errno);
+        exit(-1);
+    }
+
+    // Prepare sockaddr_in structure
+    struct sockaddr_in serverAddress = {0}, clientAddress = {0};
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_addr.s_addr = INADDR_ANY;
+    serverAddress.sin_port = serverPort;
+
+    // Bind socket to address and port
+    int bindResult = bind(serverFd, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+    if (bindResult == -1)
+    {
+        if (quiet == 1)
+            printf("Bind failed with error code : %d", errno);
+        close(serverFd);
+        exit(-1);
+    }
+    else if (quiet == 1)
+        printf("executed Bind() successfully\n");
+
+    // Listen for incoming connections
+    int listenResult = listen(serverFd, 1);
+    if (listenResult == -1)
+    {
+        if (quiet == 1)
+            printf("listen() failed with error code : %d", errno);
+        close(serverFd);
+        exit(-1);
+    }
+    else if (quiet == 1)
+        printf("Waiting for incoming TCP-connections...\n");
+
+    socklen_t len_clientAddress = {0};
+    len_clientAddress = sizeof(clientAddress);
+    int clientFd = accept(serverFd, (struct sockaddr *)&clientAddress, &len_clientAddress);
+    if (clientFd == -1)
+    {
+        if (quiet == 1)
+            printf("listen failed with error code : %d", errno);
+        close(clientFd);
+        exit(-1);
+    }
+    else if (quiet == 1)
+        printf("A new client connection accepted\n");
 
     char buffer[2][1024];
 
-    // Create a socket
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-    {
-        perror("socket");
-        exit(EXIT_FAILURE);
-    }
-
-    // Prepare the server address structure
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(serverPort);
-
-    // Bind the socket to the server address
-    if (bind(server_fd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
-    {
-        perror("bind");
-        exit(EXIT_FAILURE);
-    }
-
-    // Listen for incoming connections
-    if (listen(server_fd, 1) == -1)
-    {
-        perror("listen");
-        exit(EXIT_FAILURE);
-    }
-
-    // printf("Server listening on port %d\n", 8000);
-
-    // Accept a client connection
-    addr_len = sizeof(client_addr);
-    if ((client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &addr_len)) == -1)
-    {
-        perror("accept");
-        exit(EXIT_FAILURE);
-    }
-
-    // printf("Connection established with client\n");
-
     // Receive message1 from the client
-    ssize_t num_bytes = recv(client_fd, buffer[0], strlen(buffer[0]) - 1, 0);
+    ssize_t num_bytes = recv(clientFd, buffer[0], strlen(buffer[0]) - 1, 0);
     if (num_bytes == -1)
     {
-        perror("recv");
-        exit(EXIT_FAILURE);
+        if (quiet == 1)
+            printf("recv failed with error code : %d", errno);
+        close(clientFd);
+        exit(-1);
     }
 
     buffer[0][num_bytes] = '\0';
-    printf("Received message1: %s\n", buffer[0]);
+    if (quiet == 1)
+        printf("Received message1: %s\n", buffer[0]);
 
     // Receive message2 from the client
-    num_bytes = recv(client_fd, buffer[1], sizeof(buffer[1]) - 1, 0);
+    num_bytes = recv(clientFd, buffer[1], sizeof(buffer[1]) - 1, 0);
     if (num_bytes == -1)
     {
-        perror("recv");
-        exit(EXIT_FAILURE);
+        if (quiet == 1)
+            printf("recv failed with error code : %d", errno);
+        close(clientFd);
+        exit(-1);
     }
+
     buffer[1][num_bytes] = '\0';
-    printf("Received message2: %s\n", buffer[1]);
+
+    if (quiet == 1)
+        printf("Received message2: %s\n", buffer[1]);
 
     // Close the connection
-    close(client_fd);
-    close(server_fd);
+    close(clientFd);
+    close(serverFd);
 
-    //-----------------------------------------------------------------
     struct timeval start, end;
 
     if (strcmp(buffer[0], "ipv4") == 0 && (strcmp(buffer[1], "tcp")) == 0)
     {
 
-        printf("server open\n");
         gettimeofday(&start, NULL);
-        s_ipv4_tcp(serverPort);
+        s_ipv4_tcp(serverPort, quiet);
         gettimeofday(&end, NULL);
         long seconds = end.tv_sec - start.tv_sec;
         long microseconds = end.tv_usec - start.tv_usec;
@@ -603,7 +744,7 @@ void serverB(int serverPort, int quiet)
     else if (strcmp(buffer[0], "ipv4") == 0 && (strcmp(buffer[1], "udp")) == 0)
     {
         gettimeofday(&start, NULL);
-        s_ipv4_udp(serverPort);
+        s_ipv4_udp(serverPort, quiet);
         gettimeofday(&end, NULL);
         long seconds = end.tv_sec - start.tv_sec;
         long microseconds = end.tv_usec - start.tv_usec;
@@ -614,7 +755,7 @@ void serverB(int serverPort, int quiet)
     else if (strcmp(buffer[0], "ipv6") == 0 && (strcmp(buffer[1], "tcp")) == 0)
     {
         gettimeofday(&start, NULL);
-        s_ipv6_tcp(serverPort);
+        s_ipv6_tcp(serverPort, quiet);
         gettimeofday(&end, NULL);
         long seconds = end.tv_sec - start.tv_sec;
         long microseconds = end.tv_usec - start.tv_usec;
@@ -625,7 +766,7 @@ void serverB(int serverPort, int quiet)
     else if (strcmp(buffer[0], "ipv6") == 0 && (strcmp(buffer[1], "udp")) == 0)
     {
         gettimeofday(&start, NULL);
-        s_ipv6_udp(serverPort);
+        s_ipv6_udp(serverPort, quiet);
         gettimeofday(&end, NULL);
         long seconds = end.tv_sec - start.tv_sec;
         long microseconds = end.tv_usec - start.tv_usec;
@@ -637,7 +778,7 @@ void serverB(int serverPort, int quiet)
     else if (strcmp(buffer[0], "mmap") == 0 && (strcmp(buffer[1], "filename")) == 0)
     {
         gettimeofday(&start, NULL);
-        s_mmap(serverPort);
+        s_mmap(serverPort, quiet);
         gettimeofday(&end, NULL);
         long seconds = end.tv_sec - start.tv_sec;
         long microseconds = end.tv_usec - start.tv_usec;
@@ -648,7 +789,7 @@ void serverB(int serverPort, int quiet)
     else if (strcmp(buffer[0], "pipe") == 0 && (strcmp(buffer[1], "filename")) == 0)
     {
         gettimeofday(&start, NULL);
-        s_pipe();
+        s_pipe(quiet);
         long seconds = end.tv_sec - start.tv_sec;
         long microseconds = end.tv_usec - start.tv_usec;
         long elapsed = seconds * 1000000 + microseconds;
@@ -658,7 +799,7 @@ void serverB(int serverPort, int quiet)
     else if (strcmp(buffer[0], "uds") == 0 && (strcmp(buffer[1], "dgram")) == 0)
     {
         gettimeofday(&start, NULL);
-        s_uds_dgram();
+        s_uds_dgram(quiet);
         long seconds = end.tv_sec - start.tv_sec;
         long microseconds = end.tv_usec - start.tv_usec;
         long elapsed = seconds * 1000000 + microseconds;
@@ -668,7 +809,7 @@ void serverB(int serverPort, int quiet)
     else if (strcmp(buffer[0], "uds") == 0 && (strcmp(buffer[1], "stream")) == 0)
     {
         gettimeofday(&start, NULL);
-        s_uds_stream();
+        s_uds_stream(quiet);
         long seconds = end.tv_sec - start.tv_sec;
         long microseconds = end.tv_usec - start.tv_usec;
         long elapsed = seconds * 1000000 + microseconds;
