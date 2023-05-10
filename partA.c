@@ -8,10 +8,11 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <errno.h>
+#include "headers.h"
 
 #define BUFFER_SIZE 1024
 
-void runServer(int serverPort)
+void serverA(int serverPort)
 {
     // Create socket
     int listeningSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -134,7 +135,7 @@ void runServer(int serverPort)
     close(clientSocket);
 }
 
-void runClient(char *serverIp, int serverPort)
+void clientA(char *serverIp, int serverPort)
 {
     // Create socket
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -235,37 +236,3 @@ void runClient(char *serverIp, int serverPort)
     close(sock);
 }
 
-int main(int argc, char *argv[])
-{
-
-    if (argc < 2)
-    {
-        printf("Usage: stnc [-c IP PORT | -s PORT]\n");
-        exit(-1);
-    }
-
-    int serverPort = 0;
-    char *serverIp = NULL;
-
-    // Parse command line arguments
-    int opt;
-    while ((opt = getopt(argc, argv, "c:s:")) != -1)
-    {
-        switch (opt)
-        {
-        case 'c':
-            serverPort = atoi(argv[3]);
-            serverIp = argv[2];
-            runClient(serverIp, serverPort);
-            break;
-        case 's':
-            serverPort = atoi(argv[2]);
-            runServer(serverPort);
-            break;
-        default:
-            return 1;
-        }
-    }
-
-    return 1;
-}
