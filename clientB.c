@@ -1,18 +1,12 @@
 
 #include "headers.h"
 
-#define SOCKET_PATH "/tmp/file.txt"
-#define BUFFER_SIZE 4096
-#define FILE_NAME "file.txt"
-#define FIFO_NAME "myfifo"
-#define MAX_EVENTS 2
-
 void generate_data_to_file()
 {
 
     // Write the data to a file
-    FILE *file = fopen("data.txt", "w+");
-    if (file == NULL)
+    FILE *fp = fopen("data.txt", "w+");
+    if (fp == NULL)
     {
         printf("Error: Unable to open file for writing!\n");
         exit(1);
@@ -36,22 +30,21 @@ void generate_data_to_file()
         }
 
         // Fill the data with random values
-        fwrite(data, 1, 1024, file);
+        fwrite(data, 1, 1024, fp);
         counter = 1024;
     }
 
-    fclose(file);
+    fclose(fp);
 
     free(data);
 
     return;
 }
 
-int ipv4_tcp_client(const char *server_address, const char *server_port)
+int ipv4_tcp_client(const char *server_address, int server_port)
 {
     int client_socket, bytes_sent, err;
     struct sockaddr_in server_addr;
-    FILE *fp;
     char buffer[BUFFER_SIZE];
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket == -1)
@@ -60,7 +53,7 @@ int ipv4_tcp_client(const char *server_address, const char *server_port)
         return -1;
     }
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(atoi(server_port));
+    server_addr.sin_port = htons(server_port);
     server_addr.sin_addr.s_addr = inet_addr(server_address);
     err = connect(client_socket, (struct sockaddr *)&server_addr, sizeof(struct sockaddr));
     if (err == -1)
@@ -103,9 +96,7 @@ int ipv4_tcp_client(const char *server_address, const char *server_port)
     return 0;
 }
 
-//----------------------------------------------------------------------
-
-void c_ipv6_tcp(const char *server_address, const char *server_port)
+void ipv6_tcp_client(const char *server_address, int server_port)
 {
     int client_socket, err;
     struct sockaddr_in6 server_addr;
@@ -123,7 +114,7 @@ void c_ipv6_tcp(const char *server_address, const char *server_port)
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin6_family = AF_INET6;
     inet_pton(AF_INET6, server_address, &server_addr.sin6_addr);
-    server_addr.sin6_port = htons(atoi(server_port));
+    server_addr.sin6_port = htons(server_port);
 
     err = connect(client_socket, (struct sockaddr *)&server_addr, sizeof(server_addr));
     if (err == -1)
@@ -154,9 +145,7 @@ void c_ipv6_tcp(const char *server_address, const char *server_port)
     close(client_socket);
 }
 
-//----------------------------------------------------------
-
-int c_ipv4_udp(const char *server_address, const char *server_port)
+int ipv4_udp_client(const char *server_address, int server_port)
 {
     int client_socket, err;
     struct sockaddr_in server_addr;
@@ -169,7 +158,7 @@ int c_ipv4_udp(const char *server_address, const char *server_port)
         exit(1);
     }
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(atoi(server_port));
+    server_addr.sin_port = htons(server_port);
     server_addr.sin_addr.s_addr = inet_addr(server_address);
     fp = fopen("data.txt", "r");
     if (fp == NULL)
@@ -230,9 +219,7 @@ int c_ipv4_udp(const char *server_address, const char *server_port)
     return 0;
 }
 
-//----------------------------------------------------------------------------
-
-int c_ipv6_udp(const char *server_address, const char *server_port)
+int ipv6_udp_client(const char *server_address, int server_port)
 {
     int client_socket, err;
     struct sockaddr_in6 server_addr;
@@ -297,9 +284,7 @@ int c_ipv6_udp(const char *server_address, const char *server_port)
     return 0;
 }
 
-//-------------------------------------------------------
-
-int c_uds_dgram(const char *server_address, const char *server_port)
+int uds_dgram_client(const char *server_address, int server_port)
 {
     int client_socket, err;
     struct sockaddr_un server_addr;
@@ -340,9 +325,7 @@ int c_uds_dgram(const char *server_address, const char *server_port)
     return 0;
 }
 
-//-------------------------------------------------------
-
-int c_uds_stream(const char *server_address, const char *server_port)
+int uds_stream_client(const char *server_address, int server_port)
 {
     int client_socket, err;
     struct sockaddr_un server_addr;
@@ -402,13 +385,11 @@ int c_uds_stream(const char *server_address, const char *server_port)
     return 0;
 }
 
-//-----------------------------------------------------------
-
-int c_mmap(const char *server_address, const char *server_port)
+int mmap_client(const char *server_address, int server_port)
 {
 
     struct sockaddr_in serv_addr;
-    const char *filename = "file.txt";
+    // const char *filename = "file.txt";
     struct stat filestat;
     int fd = open("data.txt", O_RDONLY);
     if (fd < 0)
@@ -443,9 +424,7 @@ int c_mmap(const char *server_address, const char *server_port)
     return 0;
 }
 
-//------------------------------------------------------------------------------
-
-int c_pipe(const char *server_address, const char *server_port)
+int pipe_client(const char *server_address, int server_port)
 {
     int fd;
     char buffer[BUFFER_SIZE];
@@ -475,14 +454,17 @@ int c_pipe(const char *server_address, const char *server_port)
 void clientB(char *serverIp, int serverPort, char *type, char *param)
 {
 
+    printf("heloo 1");
     // create file that 100mb size
     generate_data_to_file();
-
+    
+    printf("heloo 2");
     //--------------sending choice to server-------------
 
     int client_fd;
     struct sockaddr_in server_addr;
 
+    printf("heloo 3");
     // Create a socket
     if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
@@ -490,11 +472,13 @@ void clientB(char *serverIp, int serverPort, char *type, char *param)
         exit(EXIT_FAILURE);
     }
 
+    printf("heloo 4");
     // Prepare the server address structure
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = inet_addr(serverIp); // Server IP address
-    server_addr.sin_port = htons(8000);
+    server_addr.sin_port = serverPort;
 
+    printf("heloo 5");
     // Connect to the server
     if (connect(client_fd, (struct sockaddr *)&server_addr, sizeof(serverPort)) == -1)
     {
@@ -522,47 +506,31 @@ void clientB(char *serverIp, int serverPort, char *type, char *param)
     close(client_fd);
 
     sleep(1);
-    //------------------------------------------------
 
-    if (strcmp(type, "ipv4") == 0 && (strcmp(type, "tcp")) == 0)
-    {
-        printf("client open\n");
+    if (!strcmp(type, "ipv4") && !strcmp(type, "tcp"))
         ipv4_tcp_client(serverIp, serverPort);
+    
+    else if (!strcmp(type, "ipv4") && !strcmp(type, "udp")){
+        ipv4_udp_client(serverIp, serverPort);
+        printf("heloo ");
     }
-    else if (strcmp(type, "ipv4") == 0 && (strcmp(type, "udp")) == 0)
-    {
-
-        c_ipv4_udp(serverIp, serverPort);
-    }
-    else if (strcmp(type, "ipv6") == 0 && (strcmp(type, "tcp")) == 0)
-    {
-
-        c_ipv6_tcp(serverIp, serverPort);
-    }
-    else if (strcmp(type, "ipv6") == 0 && (strcmp(type, "udp")) == 0)
-    {
-
-        c_ipv6_udp(serverIp, serverPort);
-    }
-
-    else if (strcmp(type, "mmap") == 0 && (strcmp(type, "filename")) == 0)
-    {
-
-        c_mmap(serverIp, serverPort);
-    }
-    else if (strcmp(type, "pipe") == 0 && (strcmp(type, "filename")) == 0)
-    {
-
-        c_pipe(serverIp, serverPort);
-    }
-    else if (strcmp(type, "uds") == 0 && (strcmp(type, "dgram")) == 0)
-    {
-
-        c_uds_dgram(serverIp, serverPort);
-    }
-    else if (strcmp(type, "uds") == 0 && (strcmp(type, "stream")) == 0)
-    {
-
-        c_uds_stream(serverIp, serverPort);
-    }
+        
+    
+    else if (!strcmp(type, "ipv6") && !strcmp(type, "tcp"))
+        ipv6_tcp_client(serverIp, serverPort);
+    
+    else if (!strcmp(type, "ipv6") && !strcmp(type, "udp"))
+        ipv6_udp_client(serverIp, serverPort);
+    
+    else if (!strcmp(type, "mmap") && !strcmp(type, "filename"))
+        mmap_client(serverIp, serverPort);
+    
+    else if (!strcmp(type, "pipe") && !strcmp(type, "filename"))
+        pipe_client(serverIp, serverPort);
+    
+    else if (!strcmp(type, "uds") && !strcmp(type, "dgram"))
+        uds_dgram_client(serverIp, serverPort);
+    
+    else if (!strcmp(type, "uds") && !strcmp(type, "stream"))
+        uds_stream_client(serverIp, serverPort);
 }

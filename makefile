@@ -7,5 +7,5 @@ all: stnc
 clean:
 	rm stnc
 
-stnc: partA.c
-	$(CC) $(FLAGS) stnc partA.c
+stnc: stnc.c partA.c serverB.c clientB.c headers.h
+	$(CC) $(FLAGS) stnc stnc.c partA.c serverB.c clientB.c headers.h
