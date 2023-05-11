@@ -18,7 +18,6 @@ void generate_data_to_file()
         printf("Error: Unable to allocate memory!\n");
         exit(1);
     }
-
     int counter = 0;
     while (counter <= 100 * 1024 * 1024)
     {
@@ -31,7 +30,7 @@ void generate_data_to_file()
 
         // Fill the data with random values
         fwrite(data, 1, 1024, fp);
-        counter = 1024;
+        counter += 1024;
     }
 
     fclose(fp);
@@ -454,56 +453,63 @@ int pipe_client(const char *server_address, int server_port)
 void clientB(char *serverIp, int serverPort, char *type, char *param)
 {
 
-    printf("heloo 1");
+    
     // create file that 100mb size
     generate_data_to_file();
+
+    // Create socket
+    int clientFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (clientFd == -1)
+    {
+        printf("Could not create socket : %d", errno);
+        exit(-1);
+    }
+    else
+        printf("New socket opened\n");
+
+    int enableReuse = 1;
+    int ret = setsockopt(clientFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
+    if (ret < 0)
+    {
+        printf("setsockopt() failed with error code : %d", errno);
+        exit(-1);
+    }
     
-    printf("heloo 2");
-    //--------------sending choice to server-------------
+    // Prepare sockaddr_in structure
+    struct sockaddr_in serverAddress = {0};
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_addr.s_addr = inet_addr(serverIp);
+    serverAddress.sin_port = serverPort;
 
-    int client_fd;
-    struct sockaddr_in server_addr;
-
-    printf("heloo 3");
-    // Create a socket
-    if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+    // Connect to server
+    int connectResult = connect(clientFd, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+    if (connectResult == -1)
     {
-        perror("socket");
-        exit(EXIT_FAILURE);
+        printf("connect() failed with error code : %d", errno);
+        close(clientFd);
+        exit(-1);
     }
-
-    printf("heloo 4");
-    // Prepare the server address structure
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = inet_addr(serverIp); // Server IP address
-    server_addr.sin_port = serverPort;
-
-    printf("heloo 5");
-    // Connect to the server
-    if (connect(client_fd, (struct sockaddr *)&server_addr, sizeof(serverPort)) == -1)
-    {
-        perror("connect");
-        exit(EXIT_FAILURE);
-    }
+    else
+        printf("connected to receiver\n");
 
     printf("message1: %s\n", type);
     printf("message2: %s\n", param);
 
     // Send data to the server
-    if (send(client_fd, type, strlen(type), 0) == -1)
+    if (send(clientFd, type, strlen(type), 0) == -1)
     {
-        perror("send");
-        exit(EXIT_FAILURE);
+        printf("send() failed with error code : %d", errno);
+        exit(-1);
     }
     sleep(1);
-    if (send(client_fd, param, strlen(param), 0) == -1)
+    if (send(clientFd, param, strlen(param), 0) == -1)
     {
-        perror("send");
-        exit(EXIT_FAILURE);
+        printf("send() failed with error code : %d", errno);
+        exit(-1);
     }
 
     // Close the connection
-    close(client_fd);
+    close(clientFd);
 
     sleep(1);
 
@@ -512,7 +518,7 @@ void clientB(char *serverIp, int serverPort, char *type, char *param)
     
     else if (!strcmp(type, "ipv4") && !strcmp(type, "udp")){
         ipv4_udp_client(serverIp, serverPort);
-        printf("heloo ");
+        printf("heloo\n");
     }
         
     

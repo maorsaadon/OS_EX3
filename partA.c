@@ -147,7 +147,7 @@ void clientA(char *serverIp, int serverPort)
     struct sockaddr_in serverAddress = {0};
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = inet_addr(serverIp);
-    serverAddress.sin_port = htons(serverPort);
+    serverAddress.sin_port = serverPort;
 
     // Connect to server
     int connectResult = connect(sock, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
