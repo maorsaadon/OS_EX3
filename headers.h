@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/un.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <poll.h>
@@ -19,7 +20,6 @@
 #include <math.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include <fcntl.h>
 
 
 #define SOCKET_PATH "/tmp/file.txt"
