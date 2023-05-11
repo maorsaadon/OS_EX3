@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     }
 
     int c = 0, s = 0, p = 0, q = 0, serverPort = 0;
-    char *serverIp, type, param;
+    char *serverIp, *type, *param;
 
     for (int i = 1; i < argc; i++)
     {
