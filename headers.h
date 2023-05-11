@@ -12,42 +12,18 @@
 #include <arpa/inet.h>
 #include <sys/un.h>
 #include <fcntl.h>
-#include <sys/mman.h>
 #include <sys/stat.h>
 #include <poll.h>
 #include <time.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/un.h>
-#include <fcntl.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <poll.h>
 #include <math.h>
-#include <time.h>
 #include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <stdbool.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <poll.h>
-#include <errno.h>
+
 
 #define SOCKET_PATH "/tmp/file.txt"
 #define BUFFER_SIZE 4096
-#define FILE_NAME "file.txt"
 #define FIFO_NAME "myfifo"
 #define MAX_EVENTS 2
 // #define MAX_EVENTS 1
