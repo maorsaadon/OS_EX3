@@ -16,12 +16,12 @@ void generate_data_to_file()
     {
         // Seed the random number generator
         srand(time(NULL));
-        
+
         // Generate a random string of length 1024
         char data[1025] = {0}; // Initialize with null characters
         for (int i = 0; i < 1024; i++)
         {
-            data[i] = (char) (rand() % 26 + 'a'); // Generate a random lowercase letter
+            data[i] = (char)(rand() % 26 + 'a'); // Generate a random lowercase letter
         }
 
         // Fill the data with random strings
@@ -92,7 +92,7 @@ void ipv4_tcp_client(char *serverIp, int serverPort)
     start_time_buffer[1] = start.tv_usec;
 
     // Send the start time to the server
-    if (send(clientFd, start_time_buffer, sizeof(start_time_buffer), 0) == -1)
+    if (send(clientFd, &start_time_buffer[0], sizeof(start_time_buffer[0]), 0) == -1)
     {
         printf("send() failed with error code : %d", errno);
         close(clientFd);
@@ -132,15 +132,13 @@ void ipv4_tcp_client(char *serverIp, int serverPort)
     close(clientFd);
 }
 
-// problem with the write/send to server
 void ipv6_tcp_client(char *serverIp, int serverPort)
 {
-
     // Create socket
     int clientFd = socket(AF_INET6, SOCK_STREAM, 0);
     if (clientFd == -1)
     {
-        printf("Could not create socket : %d", errno);
+        perror("Could not create socket\n");
         exit(-1);
     }
     else
@@ -150,7 +148,7 @@ void ipv6_tcp_client(char *serverIp, int serverPort)
     int ret = setsockopt(clientFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
     if (ret < 0)
     {
-        printf("setsockopt() failed with error code : %d", errno);
+        perror("setsockopt() failed\n");
         exit(-1);
     }
 
@@ -163,18 +161,29 @@ void ipv6_tcp_client(char *serverIp, int serverPort)
     int connectResult = connect(clientFd, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
     if (connectResult == -1)
     {
-        printf("connect() failed with error code : %d", errno);
+        perror("connect() failed\n");
         close(clientFd);
         exit(-1);
     }
-    else
-        printf("connected to receiver\n");
 
-    FILE *of = fopen("data.txt", "r");
+    FILE *of = fopen("data.txt", "rb");
     if (of == NULL)
     {
-        printf("fopen failed with error code : %d", errno);
-        exit(1);
+        perror("fopen() failed\n");
+        exit(-1);
+    }
+
+    // Send file size to the server
+    fseek(of, 0, SEEK_END);
+    long file_size = ftell(of);
+    fseek(of, 0, SEEK_SET);
+
+    if (send(clientFd, &file_size, sizeof(file_size), 0) == -1)
+    {
+        perror("send() failed\n");
+        close(clientFd);
+        fclose(of);
+        exit(-1);
     }
 
     // calc time
@@ -190,7 +199,7 @@ void ipv6_tcp_client(char *serverIp, int serverPort)
     // Send the start time to the server
     if (send(clientFd, start_time_buffer, sizeof(start_time_buffer), 0) == -1)
     {
-        printf("send() failed with error code : %d", errno);
+        perror("send() failed\n");
         close(clientFd);
         fclose(of);
         exit(-1);
@@ -198,20 +207,20 @@ void ipv6_tcp_client(char *serverIp, int serverPort)
 
     if (send(clientFd, &start_time_buffer[1], sizeof(start_time_buffer[1]), 0) == -1)
     {
-        printf("send() failed with error code : %d", errno);
+        perror("send() failed\n");
         close(clientFd);
         fclose(of);
         exit(-1);
     }
 
-    char buffer[BUFFER_SIZE] = {0};
+    char buffer[BUFFER_SIZE];
     size_t nbytes, total_bytes = 0;
     while ((nbytes = fread(buffer, sizeof(char), sizeof(buffer), of)) > 0)
     {
         total_bytes += nbytes;
         if (send(clientFd, buffer, nbytes, 0) == -1)
         {
-            printf("send() failed with error code : %d", errno);
+            perror("send() failed\n");
             close(clientFd);
             fclose(of);
             exit(-1);
@@ -231,8 +240,6 @@ void ipv4_udp_client(char *serverIp, int serverPort)
         perror("Could not create socket");
         exit(-1);
     }
-    else
-        printf("New socket opened\n");
 
     int enableReuse = 1;
     if (setsockopt(clientFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int)) < 0)
@@ -241,10 +248,10 @@ void ipv4_udp_client(char *serverIp, int serverPort)
         exit(-1);
     }
 
-    struct sockaddr_in serverAdress = {0};
-    serverAdress.sin_family = AF_INET;
-    serverAdress.sin_port = serverPort; // you've converted it before the function
-    serverAdress.sin_addr.s_addr = inet_addr(serverIp);
+    struct sockaddr_in serverAddress = {0};
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_port = serverPort; // you've converted it before the function
+    serverAddress.sin_addr.s_addr = inet_addr(serverIp);
 
     FILE *of = fopen("data.txt", "r");
     if (of == NULL)
@@ -271,7 +278,7 @@ void ipv4_udp_client(char *serverIp, int serverPort)
     start_time_buffer[1] = start.tv_usec;
 
     // Send the start time to the server
-    if (sendto(clientFd, &start_time_buffer[0], sizeof(start_time_buffer[0]), 0, (struct sockaddr *)&serverAdress, sizeof(serverAdress)) == -1)
+    if (sendto(clientFd, &start_time_buffer[0], sizeof(start_time_buffer[0]), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1)
     {
         perror("send() failed");
         close(clientFd);
@@ -279,7 +286,7 @@ void ipv4_udp_client(char *serverIp, int serverPort)
         exit(-1);
     }
 
-    if (sendto(clientFd, &start_time_buffer[1], sizeof(start_time_buffer[1]), 0, (struct sockaddr *)&serverAdress, sizeof(serverAdress)) == -1)
+    if (sendto(clientFd, &start_time_buffer[1], sizeof(start_time_buffer[1]), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1)
     {
         perror("send() failed");
         close(clientFd);
@@ -302,7 +309,7 @@ void ipv4_udp_client(char *serverIp, int serverPort)
         {
             if (fgets(buffer, sizeof(buffer), of) != NULL)
             {
-                if (sendto(clientFd, buffer, strlen(buffer), 0, (struct sockaddr *)&serverAdress, sizeof(struct sockaddr)) == -1)
+                if (sendto(clientFd, buffer, strlen(buffer), 0, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr)) == -1)
                 {
                     perror("sendto() failed");
                     close(clientFd);
@@ -323,51 +330,54 @@ void ipv4_udp_client(char *serverIp, int serverPort)
     }
 
     char buffer_exit[6] = "exit\n";
-    if (sendto(clientFd, buffer_exit, strlen(buffer_exit), 0, (struct sockaddr *)&serverAdress, sizeof(struct sockaddr)) == -1)
+    if (sendto(clientFd, buffer_exit, strlen(buffer_exit), 0, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr)) == -1)
     {
         perror("send() failed");
         close(clientFd);
         fclose(of);
         exit(-1);
     }
+
     close(clientFd);
     fclose(of);
 }
 
-// need to check why its take so long to finish the main and quit
 void ipv6_udp_client(char *serverIp, int serverPort)
 {
     // Create socket
     int clientFd = socket(AF_INET6, SOCK_DGRAM, 0);
     if (clientFd == -1)
     {
-        printf("Could not create socket : %d", errno);
+        perror("Could not create socket");
         exit(-1);
     }
-    else
-        printf("New socket opened\n");
 
     int enableReuse = 1;
-    int ret = setsockopt(clientFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
-    if (ret < 0)
+    if (setsockopt(clientFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int)) < 0)
     {
-        printf("setsockopt() failed with error code : %d", errno);
+        perror("setsockopt() failed");
         exit(-1);
     }
 
-    struct sockaddr_in6 serverAddress;
+    struct sockaddr_in6 serverAddress = {0};
     serverAddress.sin6_family = AF_INET6;
     serverAddress.sin6_port = serverPort;
     inet_pton(AF_INET6, serverIp, &(serverAddress.sin6_addr));
+
     FILE *of = fopen("data.txt", "r");
     if (of == NULL)
     {
-        printf("fopen failed with error code : %d", errno);
+        perror("fopen failed");
         exit(1);
     }
+
+    char buffer[BUFFER_SIZE] = {0};
     struct pollfd fds[MAX_EVENTS];
     fds[0].fd = clientFd;
     fds[0].events = POLLOUT;
+    fds[1].fd = fileno(of);
+    fds[1].events = POLLIN;
+    int nfds = 2;
 
     // Get the start time
     struct timeval start;
@@ -379,29 +389,28 @@ void ipv6_udp_client(char *serverIp, int serverPort)
     start_time_buffer[1] = start.tv_usec;
 
     // Send the start time to the server
-    if (sendto(clientFd, &start_time_buffer[0], sizeof(start_time_buffer[0]), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1)
+    if (sendto(clientFd, &start_time_buffer[0], sizeof(start_time_buffer[0]), 0, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in6)) == -1)
     {
-        printf("send() failed with error code : %d", errno);
+        perror("send() failed");
         close(clientFd);
         fclose(of);
         exit(-1);
     }
 
-    if (sendto(clientFd, &start_time_buffer[1], sizeof(start_time_buffer[1]), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1)
+    if (sendto(clientFd, &start_time_buffer[1], sizeof(start_time_buffer[1]), 0, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in6)) == -1)
     {
-        printf("send() failed with error code : %d", errno);
+        perror("send() failed");
         close(clientFd);
         fclose(of);
         exit(-1);
     }
 
-    char buffer[BUFFER_SIZE] = {0};
     while (1)
     {
-        int pull = poll(fds, MAX_EVENTS, -1);
+        int pull = poll(fds, nfds, -1);
         if (pull == -1)
         {
-            printf("Pull failed with error code : %d", errno);
+            perror("Pull failed");
             exit(-1);
         }
         else if (pull == 0)
@@ -409,13 +418,11 @@ void ipv6_udp_client(char *serverIp, int serverPort)
 
         if (fds[0].revents & POLLOUT)
         {
-
-            memset(buffer, 0, sizeof(buffer));
             if (fgets(buffer, sizeof(buffer), of) != NULL)
             {
                 if (sendto(clientFd, buffer, strlen(buffer), 0, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in6)) == -1)
                 {
-                    printf("sendto() failed with error code : %d", errno);
+                    perror("sendto() failed");
                     close(clientFd);
                     fclose(of);
                     exit(-1);
@@ -423,64 +430,66 @@ void ipv6_udp_client(char *serverIp, int serverPort)
             }
             else
             {
-                strcpy(buffer, "exit\n");
-                if (sendto(clientFd, buffer, strlen(buffer), 0, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in6)) == -1)
-                {
-                    printf("sendto() failed with error code : %d", errno);
-                    close(clientFd);
-                    fclose(of);
-                    exit(-1);
-                }
-
-                break;
+                close(fds[1].fd);
+                nfds--;
             }
+        }
+        if (nfds == 0)
+        {
+            break;
         }
     }
 
-    fclose(of);
+    char buffer_exit[6] = "exit\n";
+    if (sendto(clientFd, buffer_exit, strlen(buffer_exit), 0, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in6)) == -1)
+    {
+        perror("send() failed");
+        close(clientFd);
+        fclose(of);
+        exit(-1);
+    }
+
     close(clientFd);
+    fclose(of);
 }
 
 void uds_dgram_client(char *serverIp, int serverPort)
 {
     int client_socket, err;
     struct sockaddr_un server_addr;
-    FILE *fp;
-    char buffer[1024];
+    char buffer[BUFFER_SIZE] = {0};
+
     client_socket = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (client_socket == -1)
     {
-        perror("socket");
+        perror("Could not create socket\n");
         exit(1);
     }
     server_addr.sun_family = AF_UNIX;
     strncpy(server_addr.sun_path, SOCKET_PATH, sizeof(server_addr.sun_path) - 1);
-    fp = fopen("data.txt", "r");
+    FILE *fp = fopen("data.txt", "r");
     if (fp == NULL)
     {
-        perror("fopen");
+        perror("fopen() failed\n");
         exit(1);
     }
 
-    // Get the start time
     struct timeval start;
     gettimeofday(&start, NULL);
 
-    // Create a buffer to hold the start time
     long start_time_buffer[2];
     start_time_buffer[0] = start.tv_sec;
     start_time_buffer[1] = start.tv_usec;
 
-    // Send the start time to the server
     if (sendto(client_socket, &start_time_buffer[0], sizeof(start_time_buffer[0]), 0, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
     {
-        perror("sendto");
+        perror("sendto() failed\n");
         exit(1);
     }
 
     if (sendto(client_socket, &start_time_buffer[1], sizeof(start_time_buffer[1]), 0, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1)
     {
-        perror("sendto");
+        perror("sendto() failed\n");
         exit(1);
     }
 
@@ -489,18 +498,20 @@ void uds_dgram_client(char *serverIp, int serverPort)
         err = sendto(client_socket, buffer, strlen(buffer), 0, (struct sockaddr *)&server_addr, sizeof(struct sockaddr_un));
         if (err == -1)
         {
-            perror("sendto");
+            perror("sendto() failed\n");
             exit(1);
         }
     }
+
     fclose(fp);
     strcpy(buffer, "exit\n");
     err = sendto(client_socket, buffer, strlen(buffer), 0, (struct sockaddr *)&server_addr, sizeof(struct sockaddr_un));
     if (err == -1)
     {
-        perror("sendto");
+        perror("sendto() failed");
         exit(1);
     }
+
     close(client_socket);
 }
 
@@ -735,7 +746,7 @@ void clientB(char *serverIp, int serverPort, char *type, char *param)
     // Prepare sockaddr_in structure
     struct sockaddr_in serverAddress = {0};
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_addr.s_addr = inet_addr(serverIp);
+    serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1");
     serverAddress.sin_port = serverPort;
 
     // Connect to server
