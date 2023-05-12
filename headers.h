@@ -47,13 +47,13 @@ void s_pipe(int quiet);
 
 void clientB(char *serverIp, int serverPort, char *type, char *param);
 void generate_data_to_file();
-int ipv4_tcp_client(const char *server_address, int server_port);
-void ipv6_tcp_client(const char *server_address, int server_port);
-int ipv4_udp_client(const char *server_address, int server_port);
-int ipv6_udp_client(const char *server_address, int server_port);
-int uds_dgram_client(const char *server_address, int server_port);
-int uds_stream_client(const char *server_address, int erver_port);
-int mmap_client(const char *server_address, int server_port);
-int pipe_client(const char *server_address, int server_port);
+void ipv4_tcp_client(char *serverIp, int serverPort);
+void ipv6_tcp_client(char *serverIp, int serverPort);
+void ipv4_udp_client(char *serverIp, int serverPort);
+void ipv6_udp_client(char *serverIp, int serverPort);
+void uds_dgram_client(char *serverIp, int serverPort);
+void uds_stream_client();
+void mmap_client(int serverPort);
+void pipe_client();
 
 #endif
