@@ -361,8 +361,8 @@ void ipv6_udp_client(char *serverIp, int serverPort)
     serverAddress.sin6_port = serverPort;
     inet_pton(AF_INET6, serverIp, &(serverAddress.sin6_addr));
 
-    FILE *of = fopen("data.txt", "r");
-    if (of == NULL)
+    FILE *fp = fopen("data.txt", "r");
+    if (fp == NULL)
     {
         perror("fopen() failed\n");
         exit(1);
@@ -371,7 +371,7 @@ void ipv6_udp_client(char *serverIp, int serverPort)
     struct pollfd fds[MAX_EVENTS];
     fds[0].fd = clientFd;
     fds[0].events = POLLOUT;
-    fds[1].fd = fileno(of);
+    fds[1].fd = fileno(fp);
     fds[1].events = POLLIN;
     int nfds = 2;
 
@@ -389,7 +389,7 @@ void ipv6_udp_client(char *serverIp, int serverPort)
     {
         perror("send() failed\n");
         close(clientFd);
-        fclose(of);
+        fclose(fp);
         exit(-1);
     }
 
@@ -397,7 +397,7 @@ void ipv6_udp_client(char *serverIp, int serverPort)
     {
         perror("send() failed\n");
         close(clientFd);
-        fclose(of);
+        fclose(fp);
         exit(-1);
     }
 
@@ -415,13 +415,13 @@ void ipv6_udp_client(char *serverIp, int serverPort)
 
         if (fds[0].revents & POLLOUT)
         {
-            if (fgets(buffer, sizeof(buffer), of) != NULL)
+            if (fgets(buffer, sizeof(buffer), fp) != NULL)
             {
                 if (sendto(clientFd, buffer, strlen(buffer), 0, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in6)) == -1)
                 {
                     perror("sendto() failed\n");
                     close(clientFd);
-                    fclose(of);
+                    fclose(fp);
                     exit(-1);
                 }
             }
@@ -442,12 +442,12 @@ void ipv6_udp_client(char *serverIp, int serverPort)
     {
         perror("send() failed\n");
         close(clientFd);
-        fclose(of);
+        fclose(fp);
         exit(-1);
     }
 
     close(clientFd);
-    fclose(of);
+    fclose(fp);
 }
 
 void uds_dgram_client(char *serverIp, int serverPort)
@@ -523,7 +523,7 @@ void uds_stream_client()
     int clientFd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (clientFd == -1)
     {
-        perror("Socket failed");
+        perror("Socket failed\n");
         exit(1);
     }
 
@@ -531,7 +531,7 @@ void uds_stream_client()
     int ret = setsockopt(clientFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
     if (ret < 0)
     {
-        perror("setsockopt() failed");
+        perror("setsockopt() failed\n");
         exit(-1);
     }
 
@@ -541,19 +541,16 @@ void uds_stream_client()
     int connectResult = connect(clientFd, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_un));
     if (connectResult == -1)
     {
-        perror("connect() failed");
+        perror("connect() failed\n");
         close(clientFd);
         exit(-1);
     }
 
-    struct pollfd fds[1];
-    fds[0].fd = clientFd;
-    fds[0].events = POLLOUT;
-
     FILE *fp = fopen("data.txt", "r");
     if (fp == NULL)
     {
-        perror("fopen() failed");
+        perror("fopen() failed\n");
+        close(clientFd);
         exit(1);
     }
 
@@ -566,56 +563,38 @@ void uds_stream_client()
 
     if (send(clientFd, &buffer_time[0], sizeof(buffer_time[0]), 0) == -1)
     {
-        perror("send() failed");
-        close(clientFd);
+        perror("send() failed\n");
         fclose(fp);
+        close(clientFd);
         exit(-1);
     }
 
     if (send(clientFd, &buffer_time[1], sizeof(buffer_time[1]), 0) == -1)
     {
-        perror("send() failed");
-        close(clientFd);
+        perror("send() failed\n");
         fclose(fp);
+        close(clientFd);
         exit(-1);
     }
 
     char buffer[BUFFER_SIZE] = {0};
-    int timeout = 5000;
+
     while (fgets(buffer, sizeof(buffer), fp) != NULL)
     {
-        int pull = poll(fds, 1, timeout);
-        if (pull == -1)
+        ssize_t bytes_written = write(clientFd, buffer, strlen(buffer));
+        if (bytes_written == -1)
         {
-            perror("Poll() failed");
+            perror("write() failed\n");
+            fclose(fp);
+            close(clientFd);
             exit(1);
         }
-        else if (pull == 0)
-        {
-            continue;
-        }
-
-        if (fds[0].revents & POLLOUT)
-        {
-            pull = send(clientFd, buffer, strlen(buffer), 0);
-            if (pull == -1)
-            {
-                perror("send() failed");
-                exit(1);
-            }
-        }
-    }
-
-    char buffer_exit[6] = "exit\n";
-    if (sendto(clientFd, buffer_exit, strlen(buffer_exit), 0, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_un)) == -1)
-    {
-        perror("sendto() failed");
-        exit(1);
     }
 
     fclose(fp);
     close(clientFd);
 }
+
 
 void mmap_client(int serverPort)
 {

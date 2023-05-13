@@ -704,16 +704,12 @@ void s_uds_stream(int quiet)
 
     socklen_t len_clientAddress = sizeof(struct sockaddr_un);
 
-    struct pollfd fds[1];
-    fds[0].fd = serverFd;
-    fds[0].events = POLLIN;
-
     int clientFd = accept(serverFd, (struct sockaddr *)&clientAddress, &len_clientAddress);
     if (clientFd == -1)
     {
         if (quiet == 0)
             perror("accept() failed\n");
-        close(clientFd);
+        close(serverFd);
         exit(-1);
     }
     else if (quiet == 0)
@@ -724,27 +720,33 @@ void s_uds_stream(int quiet)
     {
         if (quiet == 0)
             perror("fopen() failed\n");
+        close(clientFd);
+        close(serverFd);
         exit(1);
     }
 
     struct timeval start = {0}, end = {0};
     long buffer_time[2] = {0};
 
-    int bytes_read = recv(clientFd, &buffer_time[0], sizeof(buffer_time[0]), 0);
-    if (bytes_read == -1)
+    int bytes_recv = recv(clientFd, &buffer_time[0], sizeof(buffer_time[0]), 0);
+    if (bytes_recv == -1)
     {
         if (quiet == 0)
             perror("recv() failed\n");
+        fclose(outputFile);
         close(clientFd);
+        close(serverFd);
         exit(-1);
     }
 
-    bytes_read = recv(clientFd, &buffer_time[1], sizeof(buffer_time[1]), 0);
-    if (bytes_read == -1)
+    bytes_recv = recv(clientFd, &buffer_time[1], sizeof(buffer_time[1]), 0);
+    if (bytes_recv == -1)
     {
         if (quiet == 0)
             perror("recv() failed\n");
+        fclose(outputFile);
         close(clientFd);
+        close(serverFd);
         exit(-1);
     }
 
@@ -754,46 +756,11 @@ void s_uds_stream(int quiet)
     printf("start time: %ld.%06ld\n", start.tv_sec, start.tv_usec);
 
     char buffer[BUFFER_SIZE] = {0};
-    int timeout = 5000;
+    ssize_t bytes_read;
 
-    while (1)
+    while ((bytes_read = read(clientFd, buffer, sizeof(buffer))) > 0)
     {
-        int pull = poll(fds, 1, timeout);
-        if (pull == -1)
-        {
-            if (quiet == 0)
-                perror("Poll() failed\n");
-            exit(-1);
-        }
-        if (fds[0].revents & POLLIN)
-        {
-            bytes_read = recv(clientFd, buffer, sizeof(buffer), 0);
-            if (bytes_read == -1)
-            {
-                if (quiet == 0)
-                    perror("recv() failed\n");
-                fclose(outputFile);
-                close(clientFd);
-                exit(-1);
-            }
-            else if (bytes_read == 0)
-                break;
-
-            else
-            {
-                if (strstr(buffer, "exit\n") != NULL)
-                    break;
-                else
-                    fwrite(buffer, sizeof(char), bytes_read, outputFile);
-            }
-        }
-        else if (pull == 0)
-        {
-            // Handle timeout here
-            if (quiet == 0)
-                printf("Timeout occurred\n");
-            break;
-        }
+        fwrite(buffer, sizeof(char), bytes_read, outputFile);
     }
 
     gettimeofday(&end, NULL);
@@ -870,7 +837,7 @@ void s_mmap(int serverPort, int quiet)
         exit(-1);
     }
 
-    int bytes_received = recvfrom(serverFd, &buffer_time[1], sizeof(buffer_time[1]), 0, (struct sockaddr *)&clientAddress, &len_clientAddress);
+    bytes_received = recvfrom(serverFd, &buffer_time[1], sizeof(buffer_time[1]), 0, (struct sockaddr *)&clientAddress, &len_clientAddress);
     if (bytes_received == -1)
     {
         if (quiet == 0)
