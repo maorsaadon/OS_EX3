@@ -1,5 +1,10 @@
 #include "headers.h"
 
+/**
+ * Performs IPv4 TCP server operation.
+ * @param serverPort The port number to bind the server socket.
+ * @param quiet A flag indicating whether to display verbose output or not.
+ */
 void s_ipv4_tcp(int serverPort, int quiet)
 {
     // Create socket
@@ -103,8 +108,6 @@ void s_ipv4_tcp(int serverPort, int quiet)
     start.tv_sec = buffer[0];
     start.tv_usec = buffer[1];
 
-    printf("start time: %ld.%06ld\n", start.tv_sec, start.tv_usec);
-
     int c;
     while ((c = fgetc(inputFile)) != EOF)
     {
@@ -112,8 +115,8 @@ void s_ipv4_tcp(int serverPort, int quiet)
     }
 
     gettimeofday(&end, NULL);
-    long seconds = end.tv_sec - buffer[0];
-    long microseconds = end.tv_usec - buffer[1];
+    long seconds = end.tv_sec - start.tv_sec;
+    long microseconds = end.tv_usec - start.tv_usec;
     long total_time = seconds * 1000000 + microseconds;
 
     printf("{ipv4 tcp} Total time is : %ld\n", total_time);
@@ -124,6 +127,11 @@ void s_ipv4_tcp(int serverPort, int quiet)
     close(serverFd);
 }
 
+/**
+ * Performs IPv6 TCP server operation.
+ * @param serverPort The port number to bind the server socket.
+ * @param quiet A flag indicating whether to display verbose output or not.
+ */
 void s_ipv6_tcp(int serverPort, int quiet)
 {
     // Create socket
@@ -255,8 +263,6 @@ void s_ipv6_tcp(int serverPort, int quiet)
     start.tv_sec = buffer_time[0];
     start.tv_usec = buffer_time[1];
 
-    printf("start time: %ld.%06ld\n", start.tv_sec, start.tv_usec);
-
     size_t total_bytes = 0;
     while (total_bytes < file_size)
     {
@@ -289,6 +295,11 @@ void s_ipv6_tcp(int serverPort, int quiet)
     exit(-1);
 }
 
+/**
+ * Performs IPv4 UDP server operation.
+ * @param serverPort The port number to bind the server socket.
+ * @param quiet A flag indicating whether to display verbose output or not.
+ */
 void s_ipv4_udp(int serverPort, int quiet)
 {
     // Create socket
@@ -363,8 +374,6 @@ void s_ipv4_udp(int serverPort, int quiet)
     start.tv_sec = buffer_time_start[0];
     start.tv_usec = buffer_time_start[1];
 
-    printf("start time: %ld.%06ld\n", start.tv_sec, start.tv_usec);
-
     struct pollfd fds[MAX_EVENTS];
     fds[0].fd = serverFd;
     fds[0].events = POLLIN;
@@ -412,8 +421,6 @@ void s_ipv4_udp(int serverPort, int quiet)
 
     long seconds = end.tv_sec - start.tv_sec;
     long microseconds = end.tv_usec - start.tv_usec;
-    printf("end time: %ld.%06ld\n", start.tv_sec, start.tv_usec);
-
     long total_time = seconds * 1000000 + microseconds;
 
     printf("{ipv4 udp} Total time is : %ld\n", total_time);
@@ -422,6 +429,11 @@ void s_ipv4_udp(int serverPort, int quiet)
     close(serverFd);
 }
 
+/**
+ * Performs IPv6 UDP server operation.
+ * @param serverPort The port number to bind the server socket.
+ * @param quiet A flag indicating whether to display verbose output or not.
+ */
 void s_ipv6_udp(int serverPort, int quiet)
 {
 
@@ -497,8 +509,6 @@ void s_ipv6_udp(int serverPort, int quiet)
     start.tv_sec = buffer_time[0];
     start.tv_usec = buffer_time[1];
 
-    printf("start time: %ld.%06ld\n", start.tv_sec, start.tv_usec);
-
     struct pollfd fds[MAX_EVENTS];
     fds[0].fd = serverFd;
     fds[0].events = POLLIN;
@@ -546,8 +556,6 @@ void s_ipv6_udp(int serverPort, int quiet)
 
     long seconds = end.tv_sec - start.tv_sec;
     long microseconds = end.tv_usec - start.tv_usec;
-    printf("end time: %ld.%06ld\n", start.tv_sec, start.tv_usec);
-
     long total_time = seconds * 1000000 + microseconds;
 
     printf("{ipv4 udp} Total time is : %ld\n", total_time);
@@ -556,6 +564,10 @@ void s_ipv6_udp(int serverPort, int quiet)
     close(serverFd);
 }
 
+/**
+ * Performs UNIX domain socket datagram server operation.
+ * @param quiet A flag indicating whether to display verbose output or not.
+ */
 void s_uds_dgram(int quiet)
 {
     int serverFd = socket(AF_UNIX, SOCK_DGRAM, 0);
@@ -610,8 +622,6 @@ void s_uds_dgram(int quiet)
     start.tv_sec = buffer_time[0];
     start.tv_usec = buffer_time[1];
 
-    printf("start time: %ld.%06ld\n", start.tv_sec, start.tv_usec);
-
     FILE *outputFile = fopen("uds_dgram.txt", "wb");
     if (outputFile == NULL)
     {
@@ -655,6 +665,10 @@ void s_uds_dgram(int quiet)
     unlink(SOCKET_PATH);
 }
 
+/**
+ * Performs UNIX domain socket stream server operation.
+ * @param quiet A flag indicating whether to display verbose output or not.
+ */
 void s_uds_stream(int quiet)
 {
     int serverFd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -753,8 +767,6 @@ void s_uds_stream(int quiet)
     start.tv_sec = buffer_time[0];
     start.tv_usec = buffer_time[1];
 
-    printf("start time: %ld.%06ld\n", start.tv_sec, start.tv_usec);
-
     char buffer[BUFFER_SIZE] = {0};
     ssize_t bytes_read;
 
@@ -775,7 +787,11 @@ void s_uds_stream(int quiet)
     close(serverFd);
 }
 
-// need to check
+/**
+ * Performs memory-mapped file I/O using UDP.
+ * @param serverPort The port number to bind the server socket.
+ * @param quiet A flag indicating whether to display verbose output or not.
+ */
 void s_mmap(int serverPort, int quiet)
 {
 
@@ -849,8 +865,6 @@ void s_mmap(int serverPort, int quiet)
     start.tv_sec = buffer_time[0];
     start.tv_usec = buffer_time[1];
 
-    printf("start time: %ld.%06ld\n", start.tv_sec, start.tv_usec);
-
     struct pollfd fds[1];
     fds[0].fd = serverFd;
     fds[0].events = POLLIN;
@@ -902,7 +916,10 @@ void s_mmap(int serverPort, int quiet)
     close(serverFd);
 }
 
-// need to check
+/**
+ * Performs pipe-based communication.
+ * @param quiet A flag indicating whether to display verbose output or not.
+ */
 void s_pipe(int quiet)
 {
 
@@ -948,8 +965,6 @@ void s_pipe(int quiet)
     start.tv_sec = buffer_time[0];
     start.tv_usec = buffer_time[1];
 
-    printf("start time: %ld.%06ld\n", start.tv_sec, start.tv_usec);
-
     char buffer[BUFFER_SIZE] = {0};
     while ((bytes_read = read(fd, buffer, BUFFER_SIZE)) > 0)
     {
@@ -968,6 +983,11 @@ void s_pipe(int quiet)
     unlink(FIFO_NAME);
 }
 
+/**
+ * Server function for handling incoming connections and routing them based on the received messages.
+ * @param serverPort The port number to bind the server socket.
+ * @param quiet A flag indicating whether to display verbose output or not.
+ */
 void serverB(int serverPort, int quiet)
 {
 

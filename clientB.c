@@ -1,9 +1,13 @@
 
 #include "headers.h"
 
+/**
+ * Generates data and writes it to a file named "data.txt".
+ * The generated data consists of random strings of length 1024 repeated multiple times.
+ * Each string is written to the file using fprintf.
+ */
 void generate_data_to_file()
 {
-    // Write the data to a file
     FILE *fp = fopen("data.txt", "w+");
     if (fp == NULL)
     {
@@ -14,17 +18,12 @@ void generate_data_to_file()
     int counter = 0;
     while (counter <= 100 * 1024 * 1024)
     {
-        // Seed the random number generator
         srand(time(NULL));
 
-        // Generate a random string of length 1024
-        char data[1025] = {0}; // Initialize with null characters
+        char data[1025] = {0}; 
         for (int i = 0; i < 1024; i++)
-        {
-            data[i] = (char)(rand() % 26 + 'a'); // Generate a random lowercase letter
-        }
+            data[i] = (char)(rand() % 26 + 'a'); 
 
-        // Fill the data with random strings
         fprintf(fp, "%s", data);
         counter += 1024;
     }
@@ -34,6 +33,13 @@ void generate_data_to_file()
     return;
 }
 
+/**
+ * Connects to a server using IPv4 and TCP protocol.
+ * Reads data from a file named "data.txt" and sends it to the server.
+ *
+ * @param serverIp   The IP address of the server.
+ * @param serverPort The port number of the server.
+ */
 void c_ipv4_tcp(char *serverIp, int serverPort)
 {
     // Create socket
@@ -43,8 +49,6 @@ void c_ipv4_tcp(char *serverIp, int serverPort)
         perror("Could not create socket \n");
         exit(-1);
     }
-    else
-        printf("New socket opened\n");
 
     int enableReuse = 1;
     int ret = setsockopt(clientFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
@@ -130,6 +134,12 @@ void c_ipv4_tcp(char *serverIp, int serverPort)
     close(clientFd);
 }
 
+/**
+ * Connects to a server using IPv6 and TCP protocol.
+ * Reads data from a file named "data.txt" and sends it to the server.
+ * @param serverIp The IPv6 address of the server.
+ * @param serverPort The port number of the server.
+ */
 void c_ipv6_tcp(char *serverIp, int serverPort)
 {
     // Create socket
@@ -139,8 +149,6 @@ void c_ipv6_tcp(char *serverIp, int serverPort)
         perror("Could not create socket\n");
         exit(-1);
     }
-    else
-        printf("New socket opened\n");
 
     int enableReuse = 1;
     int ret = setsockopt(clientFd, SOL_SOCKET, SO_REUSEADDR, &enableReuse, sizeof(int));
@@ -228,6 +236,12 @@ void c_ipv6_tcp(char *serverIp, int serverPort)
     close(clientFd);
 }
 
+/**
+ * Connects to a server using IPv4 and UDP protocol.
+ * Reads data from a file named "data.txt" and sends it to the server.
+ * @param serverIp The IP address of the server.
+ * @param serverPort The port number of the server.
+*/
 void c_ipv4_udp(char *serverIp, int serverPort)
 {
     // Create socket
@@ -339,9 +353,14 @@ void c_ipv4_udp(char *serverIp, int serverPort)
     fclose(of);
 }
 
+/**
+ * Connects to a server using IPv6 and UDP protocol.
+ * Reads data from a file named "data.txt" and sends it to the server.
+ * @param serverIp The IPv6 address of the server.
+ * @param serverPort The port number of the server.
+*/
 void c_ipv6_udp(char *serverIp, int serverPort)
 {
-    // Create socket
     int clientFd = socket(AF_INET6, SOCK_DGRAM, 0);
     if (clientFd == -1)
     {
@@ -375,16 +394,13 @@ void c_ipv6_udp(char *serverIp, int serverPort)
     fds[1].events = POLLIN;
     int nfds = 2;
 
-    // Get the start time
     struct timeval start = {0};
     gettimeofday(&start, NULL);
 
-    // Create a buffer to hold the start time
     long buffer_time[2] = {0};
     buffer_time[0] = start.tv_sec;
     buffer_time[1] = start.tv_usec;
 
-    // Send the start time to the server
     if (sendto(clientFd, &buffer_time[0], sizeof(buffer_time[0]), 0, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in6)) == -1)
     {
         perror("send() failed\n");
@@ -450,6 +466,12 @@ void c_ipv6_udp(char *serverIp, int serverPort)
     fclose(fp);
 }
 
+/**
+ * Connects to a server using IPv4 and Unix Domain Datagram protocol.
+ * Reads data from a file named "data.txt" and sends it to the server.
+ * @param serverIp The IP address of the server.
+ * @param serverPort The port number of the server.
+*/
 void c_uds_dgram(char *serverIp, int serverPort)
 {
 
@@ -518,6 +540,10 @@ void c_uds_dgram(char *serverIp, int serverPort)
     close(clientFd);
 }
 
+/**
+ * Connects to a server using Unix Domain Stream protocol.
+ * Reads data from a file named "data.txt" and sends it to the server using a Unix Domain Stream socket.
+*/
 void c_uds_stream()
 {
     int clientFd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -595,6 +621,11 @@ void c_uds_stream()
     close(clientFd);
 }
 
+/**
+ * Sends data to a server using the Memory-Mapped File technique.
+ * Reads data from a file named "data.txt" and sends it to the server.
+ * @param serverPort The port number of the server.
+*/
 void c_mmap(int serverPort)
 {
 
@@ -634,16 +665,15 @@ void c_mmap(int serverPort)
     serverAddress.sin_port = serverPort;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
 
-    // Get the start time
     struct timeval start;
     gettimeofday(&start, NULL);
 
-    // Create a buffer to hold the start time
+
     long buffer_time[2];
     buffer_time[0] = start.tv_sec;
     buffer_time[1] = start.tv_usec;
 
-    // Send the start time to the server
+    
     if (sendto(clientFd, &buffer_time[0], sizeof(buffer_time[0]), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1)
     {
         perror("sendto() failed\n");
@@ -674,19 +704,20 @@ void c_mmap(int serverPort)
     close(clientFd);
 }
 
+/**
+ * Sends data to a server using a named pipe (FIFO).
+ * Reads data from a file named "data.txt" and sends it to the server.
+*/
 void c_pipe()
 {
-    int fd;
-    char buffer[BUFFER_SIZE];
-    ssize_t bytes_read;
-    FILE *file;
-    file = fopen("data.txt", "r");
+    
+    FILE *file = fopen("data.txt", "r");
     if (file == NULL)
     {
         perror("Failed to open file");
         exit(EXIT_FAILURE);
     }
-    fd = open(FIFO_NAME, O_WRONLY);
+    int fd = open(FIFO_NAME, O_WRONLY);
     if (fd == -1)
     {
         perror("Failed to open named pipe");
@@ -715,6 +746,8 @@ void c_pipe()
         exit(1);
     }
 
+    char buffer[BUFFER_SIZE] ={0};
+    ssize_t bytes_read;
     while ((bytes_read = fread(buffer, 1, BUFFER_SIZE, file)) > 0)
     {
         write(fd, buffer, bytes_read);
@@ -723,12 +756,18 @@ void c_pipe()
     close(fd);
 }
 
+/**
+ * Client B function that connects to a server and performs different operations based on the given parameters.
+ * @param serverIp The IP address of the server.
+ * @param serverPort The port number of the server.
+ * @param type The type of connection protocol (e.g., "ipv4", "ipv6", "mmap", "pipe", "uds").
+ * @param param The parameter associated with the connection protocol.
+*/
 void clientB(char *serverIp, int serverPort, char *type, char *param)
 {
     // create file that 100mb size
     generate_data_to_file();
 
-    // Create socket
     int clientFd = socket(AF_INET, SOCK_STREAM, 0);
     if (clientFd == -1)
     {
@@ -744,13 +783,12 @@ void clientB(char *serverIp, int serverPort, char *type, char *param)
         exit(-1);
     }
 
-    // Prepare sockaddr_in structure
+
     struct sockaddr_in serverAddress = {0};
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1");
     serverAddress.sin_port = serverPort;
 
-    // Connect to server
     int connectResult = connect(clientFd, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
     if (connectResult == -1)
     {
@@ -762,7 +800,6 @@ void clientB(char *serverIp, int serverPort, char *type, char *param)
     printf("message1: %s\n", type);
     printf("message2: %s\n", param);
 
-    // Send data to the server
     if (send(clientFd, type, strlen(type), 0) == -1)
     {
         printf("send() failed with error code : %d", errno);
@@ -775,7 +812,6 @@ void clientB(char *serverIp, int serverPort, char *type, char *param)
         exit(-1);
     }
 
-    // Close the connection
     close(clientFd);
 
     sleep(1);
