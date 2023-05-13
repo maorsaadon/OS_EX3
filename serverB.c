@@ -558,7 +558,7 @@ void s_ipv6_udp(int serverPort, int quiet)
     long microseconds = end.tv_usec - start.tv_usec;
     long total_time = seconds * 1000000 + microseconds;
 
-    printf("{ipv4 udp} Total time is : %ld\n", total_time);
+    printf("{ipv6 udp} Total time is : %ld\n", total_time);
 
     fclose(outputFile);
     close(serverFd);
