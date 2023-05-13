@@ -48,9 +48,10 @@ In order to run this project follow this steps:
 ./stnc -s <PORT> -p  
 
 5.Open STNC in server performance and quiet mode.  
-./stnc -s <PORT> -p -q  
+./stnc -s <PORT> -p -q    
 
-Options for TYPE and PARAM: 
+## Options for TYPE and PARAM:   
+    
 1.IPv4 & TCP mode - ipv4 tcp  
 2.IPv4 & UDP mode - ipv4 udp  
 3.IPv6 & TCP mode - ipv6 tcp  
