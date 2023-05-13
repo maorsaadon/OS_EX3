@@ -4,25 +4,24 @@ By Maor Saadon and Matan Adar
 ID 318532421 & ID 209321552  
 
 ## Introduction  
-In this assignment we implemented a tool called STNC (Stands for Student Network Communication) tool, that has two following main functions.
+In this assignment we implemented a tool called STNC (Stands for Student Network Communication) tool, that has two following main   functions.  
 
 ### Chat  
-A chat cmd tool that can send messages over the network, to the same tool, listening on the other side, and get the response,   
+A chat cmd tool that can send messages over the network, to the same tool, listening on the other side, and get the response,     
 so there will be 2 sides communication. The communication is based of IPv4 TCP protocol.  
 
 ## Network Performance Tool
-Network performance tool that checks the internal and external network between two processes (that can be in two different machines). 
-The tool generates a 100MB of random data and sends it to the other side via one of the 8 different protocols:
-    1.IPv4 – TCP or UDP (local or remote machine).
-    2.IPv6 – TCP or UDP (local or remote machine).
-    3.Unix Domain Socket (UDS) – Stream (equivalent to TCP) or Datagram (equivalent to UDP), local machine only.
-    4.Memory Mapped File – Share the generated data via memory mapping (local machine only).
-    5.Piping – Transfer the generated data via piping (local machine only).
+Network performance tool that checks the internal and external network between two processes (that can be in two different machines).   The tool generates a 100MB of random data and sends it to the other side via one of the 8 different protocols:  
+    1.IPv4 – TCP or UDP (local or remote machine).  
+    2.IPv6 – TCP or UDP (local or remote machine).  
+    3.Unix Domain Socket (UDS) – Stream (equivalent to TCP) or Datagram (equivalent to UDP), local machine only.  
+    4.Memory Mapped File – Share the generated data via memory mapping (local machine only).  
+    5.Piping – Transfer the generated data via piping (local machine only).  
 
 ## Requirements
-* Linux machine (Ubuntu 22.04 LTS recommended)
-* GNU C Compiler (GCC)
-* Make (For Makefile)
+* Linux machine (Ubuntu 22.04 LTS recommended)  
+* GNU C Compiler (GCC)  
+* Make (For Makefile)  
 
 ## Building
 In order to run this project follow this steps:    
