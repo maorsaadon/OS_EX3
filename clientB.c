@@ -34,7 +34,7 @@ void generate_data_to_file()
     return;
 }
 
-void ipv4_tcp_client(char *serverIp, int serverPort)
+void c_ipv4_tcp(char *serverIp, int serverPort)
 {
     // Create socket
     int clientFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -130,7 +130,7 @@ void ipv4_tcp_client(char *serverIp, int serverPort)
     close(clientFd);
 }
 
-void ipv6_tcp_client(char *serverIp, int serverPort)
+void c_ipv6_tcp(char *serverIp, int serverPort)
 {
     // Create socket
     int clientFd = socket(AF_INET6, SOCK_STREAM, 0);
@@ -228,7 +228,7 @@ void ipv6_tcp_client(char *serverIp, int serverPort)
     close(clientFd);
 }
 
-void ipv4_udp_client(char *serverIp, int serverPort)
+void c_ipv4_udp(char *serverIp, int serverPort)
 {
     // Create socket
     int clientFd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -339,7 +339,7 @@ void ipv4_udp_client(char *serverIp, int serverPort)
     fclose(of);
 }
 
-void ipv6_udp_client(char *serverIp, int serverPort)
+void c_ipv6_udp(char *serverIp, int serverPort)
 {
     // Create socket
     int clientFd = socket(AF_INET6, SOCK_DGRAM, 0);
@@ -450,7 +450,7 @@ void ipv6_udp_client(char *serverIp, int serverPort)
     fclose(fp);
 }
 
-void uds_dgram_client(char *serverIp, int serverPort)
+void c_uds_dgram(char *serverIp, int serverPort)
 {
 
     int clientFd = socket(AF_UNIX, SOCK_DGRAM, 0);
@@ -518,7 +518,7 @@ void uds_dgram_client(char *serverIp, int serverPort)
     close(clientFd);
 }
 
-void uds_stream_client()
+void c_uds_stream()
 {
     int clientFd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (clientFd == -1)
@@ -595,8 +595,7 @@ void uds_stream_client()
     close(clientFd);
 }
 
-
-void mmap_client(int serverPort)
+void c_mmap(int serverPort)
 {
 
     struct stat filestat;
@@ -675,7 +674,7 @@ void mmap_client(int serverPort)
     close(clientFd);
 }
 
-void pipe_client()
+void c_pipe()
 {
     int fd;
     char buffer[BUFFER_SIZE];
@@ -782,27 +781,27 @@ void clientB(char *serverIp, int serverPort, char *type, char *param)
     sleep(1);
 
     if (!strcmp(type, "ipv4") && !strcmp(param, "tcp"))
-        ipv4_tcp_client(serverIp, serverPort);
+        c_ipv4_tcp(serverIp, serverPort);
 
     else if (!strcmp(type, "ipv4") && !strcmp(param, "udp"))
     {
-        ipv4_udp_client(serverIp, serverPort);
+        c_ipv4_udp(serverIp, serverPort);
     }
     else if (!strcmp(type, "ipv6") && !strcmp(param, "tcp"))
-        ipv6_tcp_client(serverIp, serverPort);
+        c_ipv6_tcp(serverIp, serverPort);
 
     else if (!strcmp(type, "ipv6") && !strcmp(param, "udp"))
-        ipv6_udp_client(serverIp, serverPort);
+        c_ipv6_udp(serverIp, serverPort);
 
     else if (!strcmp(type, "mmap") && !strcmp(param, "filename"))
-        mmap_client(serverPort);
+        c_mmap(serverPort);
 
     else if (!strcmp(type, "pipe") && !strcmp(param, "filename"))
-        pipe_client();
+        c_pipe();
 
     else if (!strcmp(type, "uds") && !strcmp(param, "dgram"))
-        uds_dgram_client(serverIp, serverPort);
+        c_uds_dgram(serverIp, serverPort);
 
     else if (!strcmp(type, "uds") && !strcmp(param, "stream"))
-        uds_stream_client();
+        c_uds_stream();
 }
