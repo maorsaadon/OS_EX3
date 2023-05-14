@@ -850,11 +850,12 @@ void s_mmap(char *filename, int quiet)
  * Performs pipe-based communication.
  * @param quiet A flag indicating whether to display verbose output or not.
  */
-void s_pipe(char* filename, int quiet)
+void s_pipe(char *filename, int quiet)
 {
 
-    FILE *fp = fopen("received.txt", "w");
-    if(fp == NULL){
+    FILE *fp = fopen("pipe.txt", "w");
+    if (fp == NULL)
+    {
         perror("fopen() failed\n");
         exit(1);
     }
@@ -872,7 +873,7 @@ void s_pipe(char* filename, int quiet)
     char buffer[BUFFER_SIZE] = {0};
     ssize_t bytesRead;
 
-    struct timeval start,end;
+    struct timeval start, end;
     gettimeofday(&start, NULL);
 
     // Read the contents of the FIFO and print them to stdout
@@ -888,7 +889,6 @@ void s_pipe(char* filename, int quiet)
 
     printf("pipe, %ld\n", total_time);
 
-
     // Close the FIFO
     close(fdFIFO);
 
@@ -897,7 +897,6 @@ void s_pipe(char* filename, int quiet)
 
     // Remove the FIFO
     unlink(filename);
-
 }
 
 /**
@@ -1002,7 +1001,6 @@ void serverB(int serverPort, int quiet)
     if (quiet == 0)
         printf("Received message2: %s\n", buffer[1]);
 
-
     // getting the hash from client
     unsigned long clientHash;
     if (recv(clientFd, &clientHash, sizeof(clientHash), 0) < 0)
@@ -1011,9 +1009,10 @@ void serverB(int serverPort, int quiet)
         exit(1);
     }
 
-    //need to be here(before the socket close)
-    if(!strcmp(buffer[0], "pipe")){
-        
+    // need to be here(before the socket close)
+    if (!strcmp(buffer[0], "pipe"))
+    {
+
         sleep(1);
 
         // Receive message2 from the client
@@ -1028,9 +1027,9 @@ void serverB(int serverPort, int quiet)
 
         buffer[1][num_bytes] = '\0';
 
-        //printf("buffer is: %s" ,buffer[1]);
+        // printf("buffer is: %s" ,buffer[1]);
 
-        s_pipe(buffer[1],quiet);
+        s_pipe(buffer[1], quiet);
     }
 
     // Close the connection
@@ -1048,7 +1047,7 @@ void serverB(int serverPort, int quiet)
 
     else if (!strcmp(buffer[0], "mmap") && !strcmp(buffer[1], "filename"))
         s_mmap(buffer[1], quiet);
-    
+
     else if (!strcmp(buffer[0], "uds") && !strcmp(buffer[1], "dgram"))
         s_uds_dgram(quiet);
 
