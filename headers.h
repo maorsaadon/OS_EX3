@@ -25,6 +25,8 @@
 #define SOCKET_PATH "/tmp/file.txt"
 #define BUFFER_SIZE 4096
 #define FIFO_NAME "myfifo"
+#define FILE_NAME "data.txt"
+#define FILE_SIZE 100*1024*1024
 #define MAX_EVENTS 2
 // #define MAX_EVENTS 1
 
@@ -42,18 +44,19 @@ void s_ipv4_udp(int serverPort, int quiet);
 void s_ipv6_udp(int serverPort, int quiet);
 void s_uds_dgram(int quiet);
 void s_uds_stream(int quiet);
-void s_mmap(int serverPort, int quiet);
-void s_pipe(int quiet);
+void s_mmap(char *filename, int quiet);
+void s_pipe(char *filename, int quiet);
 
 void clientB(char *serverIp, int serverPort, char *type, char *param);
-void generate_data_to_file();
-void ipv4_tcp_client(char *serverIp, int serverPort);
-void ipv6_tcp_client(char *serverIp, int serverPort);
-void ipv4_udp_client(char *serverIp, int serverPort);
-void ipv6_udp_client(char *serverIp, int serverPort);
-void uds_dgram_client(char *serverIp, int serverPort);
-void uds_stream_client();
-void mmap_client(int serverPort);
-void pipe_client();
+FILE* generate_data_to_file();
+unsigned long hash(FILE *file);
+void c_ipv4_tcp(char *serverIp, int serverPort);
+void c_ipv6_tcp(char *serverIp, int serverPort);
+void c_ipv4_udp(char *serverIp, int serverPort);
+void c_ipv6_udp(char *serverIp, int serverPort);
+void c_uds_dgram(char *serverIp, int serverPort);
+void c_uds_stream();
+void c_mmap(char* param);
+void c_pipe(char* param , FILE* fp);
 
 #endif
