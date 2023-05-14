@@ -84,29 +84,9 @@ void s_ipv4_tcp(int serverPort, int quiet)
         exit(1);
     }
 
-    // Receive start time from the client socket
-    struct timeval start = {0}, end = {0};
-    long buffer[2] = {0};
-    int bytes_read = recv(clientFd, &buffer[0], sizeof(buffer[0]), 0);
-    if (bytes_read == -1)
-    {
-        if (quiet == 0)
-            perror("recv() failed\n");
-        close(clientFd);
-        exit(-1);
-    }
-
-    bytes_read = recv(clientFd, &buffer[1], sizeof(buffer[1]), 0);
-    if (bytes_read == -1)
-    {
-        if (quiet == 0)
-            perror("recv() failed\n");
-        close(clientFd);
-        exit(-1);
-    }
-
-    start.tv_sec = buffer[0];
-    start.tv_usec = buffer[1];
+    // calc time
+    struct timeval start,end;
+    gettimeofday(&start, NULL);
 
     int c;
     while ((c = fgetc(inputFile)) != EOF)
@@ -230,36 +210,10 @@ void s_ipv6_tcp(int serverPort, int quiet)
         exit(-1);
     }
 
-    // Receive start time from the client socket
+    // calc time
     struct timeval start = {0}, end = {0};
-    long buffer_time[2] = {0};
-    bytes_read = recv(clientFd, &buffer_time[0], sizeof(buffer_time[0]), 0);
-    if (bytes_read == -1)
-    {
-        if (quiet == 0)
-            perror("recv() failed\n");
-        fclose(outputFile);
-        fclose(inputFile);
-        close(clientFd);
-        close(serverFd);
-        exit(-1);
-    }
-
-    bytes_read = recv(clientFd, &buffer_time[1], sizeof(buffer_time[1]), 0);
-    if (bytes_read == -1)
-    {
-        if (quiet == 0)
-            perror("recv() failed\n");
-        fclose(outputFile);
-        fclose(inputFile);
-        close(clientFd);
-        close(serverFd);
-        exit(-1);
-    }
-
-    start.tv_sec = buffer_time[0];
-    start.tv_usec = buffer_time[1];
-
+    gettimeofday(&start, NULL);
+    
     size_t total_bytes = 0;
     while (total_bytes < file_size)
     {
@@ -343,39 +297,20 @@ void s_ipv4_udp(int serverPort, int quiet)
         exit(1);
     }
 
-    long buffer_time_start[2] = {0};
-    struct timeval start = {0}, end = {0};
-
     socklen_t len_clientAddress = {0};
     len_clientAddress = sizeof(clientAddress);
 
-    // Receive start time from the client socket
-    if (recv(serverFd, &buffer_time_start[0], sizeof(buffer_time_start[0]), 0) == -1)
-    {
-        if (quiet == 0)
-            perror("recv() failed\n");
-        fclose(outputFile);
-        close(serverFd);
-        exit(-1);
-    }
-
-    if (recv(serverFd, &buffer_time_start[1], sizeof(buffer_time_start[1]), 0) == -1)
-    {
-        if (quiet == 0)
-            perror("recv() failed\n");
-        fclose(outputFile);
-        close(serverFd);
-        exit(-1);
-    }
-
-    start.tv_sec = buffer_time_start[0];
-    start.tv_usec = buffer_time_start[1];
 
     struct pollfd fds[MAX_EVENTS];
     fds[0].fd = serverFd;
     fds[0].events = POLLIN;
 
     char buffer[BUFFER_SIZE] = {0};
+
+    //calc time
+    struct timeval start = {0}, end = {0};
+    gettimeofday(&start, NULL);
+
     // Inside the while loop
     while (1)
     {
@@ -478,39 +413,19 @@ void s_ipv6_udp(int serverPort, int quiet)
         exit(1);
     }
 
-    long buffer_time[2] = {0};
-    struct timeval start = {0}, end = {0};
-
     socklen_t len_clientAddress = {0};
     len_clientAddress = sizeof(clientAddress);
-
-    // Receive start time from the client socket
-    if (recv(serverFd, &buffer_time[0], sizeof(buffer_time[0]), 0) == -1)
-    {
-        if (quiet == 0)
-            perror("recv() failed\n");
-        fclose(outputFile);
-        close(serverFd);
-        exit(-1);
-    }
-
-    if (recv(serverFd, &buffer_time[1], sizeof(buffer_time[1]), 0) == -1)
-    {
-        if (quiet == 0)
-            perror("recv() failed\n");
-        fclose(outputFile);
-        close(serverFd);
-        exit(-1);
-    }
-
-    start.tv_sec = buffer_time[0];
-    start.tv_usec = buffer_time[1];
 
     struct pollfd fds[MAX_EVENTS];
     fds[0].fd = serverFd;
     fds[0].events = POLLIN;
 
     char buffer[BUFFER_SIZE] = {0};
+
+    //calc time
+    struct timeval start = {0}, end = {0};
+    gettimeofday(&start, NULL);
+
     // Inside the while loop
     while (1)
     {
@@ -603,21 +518,8 @@ void s_uds_dgram(int quiet)
         printf("Executed Bind() successfully\n");
 
     char buffer[BUFFER_SIZE];
-    struct timeval start = {0}, end = {0};
-    long buffer_time[2] = {0};
+
     socklen_t len_clientAddress = sizeof(struct sockaddr_un);
-
-    int bytes_received = recvfrom(serverFd, &buffer_time, sizeof(buffer_time), 0, (struct sockaddr *)&serverAddress, &len_clientAddress);
-    if (bytes_received == -1)
-    {
-        if (quiet == 0)
-            perror("recvfrom() failed\n");
-        close(serverFd);
-        exit(-1);
-    }
-
-    start.tv_sec = buffer_time[0];
-    start.tv_usec = buffer_time[1];
 
     FILE *outputFile = fopen("uds_dgram.txt", "wb");
     if (outputFile == NULL)
@@ -628,9 +530,12 @@ void s_uds_dgram(int quiet)
         exit(1);
     }
 
+    struct timeval start = {0}, end = {0};
+    gettimeofday(&start, NULL);
+
     while (1)
     {
-        bytes_received = recvfrom(serverFd, buffer, sizeof(buffer), 0, (struct sockaddr *)&serverAddress, &len_clientAddress);
+        int bytes_received = recvfrom(serverFd, buffer, sizeof(buffer), 0, (struct sockaddr *)&serverAddress, &len_clientAddress);
         if (bytes_received == -1)
         {
             if (quiet == 0)
@@ -736,36 +641,12 @@ void s_uds_stream(int quiet)
         exit(1);
     }
 
-    struct timeval start = {0}, end = {0};
-    long buffer_time[2] = {0};
-
-    int bytes_recv = recv(clientFd, &buffer_time[0], sizeof(buffer_time[0]), 0);
-    if (bytes_recv == -1)
-    {
-        if (quiet == 0)
-            perror("recv() failed\n");
-        fclose(outputFile);
-        close(clientFd);
-        close(serverFd);
-        exit(-1);
-    }
-
-    bytes_recv = recv(clientFd, &buffer_time[1], sizeof(buffer_time[1]), 0);
-    if (bytes_recv == -1)
-    {
-        if (quiet == 0)
-            perror("recv() failed\n");
-        fclose(outputFile);
-        close(clientFd);
-        close(serverFd);
-        exit(-1);
-    }
-
-    start.tv_sec = buffer_time[0];
-    start.tv_usec = buffer_time[1];
-
     char buffer[BUFFER_SIZE] = {0};
     ssize_t bytes_read;
+
+    //calc time
+    struct timeval start = {0}, end = {0};
+    gettimeofday(&start, NULL);
 
     while ((bytes_read = read(clientFd, buffer, sizeof(buffer))) > 0)
     {
@@ -839,7 +720,7 @@ void s_mmap(char *filename, int quiet)
     long microseconds = end.tv_usec - start.tv_usec;
     long total_time = seconds * 1000000 + microseconds;
 
-    printf("{mmap} Total time is : %ld\n", total_time);
+    printf("mmap, %ld\n", total_time);
 
     munmap(addr, size);
     close(fd);
@@ -850,12 +731,11 @@ void s_mmap(char *filename, int quiet)
  * Performs pipe-based communication.
  * @param quiet A flag indicating whether to display verbose output or not.
  */
-void s_pipe(char *filename, int quiet)
+void s_pipe(char* filename, int quiet)
 {
 
     FILE *fp = fopen("pipe.txt", "w");
-    if (fp == NULL)
-    {
+    if(fp == NULL){
         perror("fopen() failed\n");
         exit(1);
     }
@@ -873,7 +753,7 @@ void s_pipe(char *filename, int quiet)
     char buffer[BUFFER_SIZE] = {0};
     ssize_t bytesRead;
 
-    struct timeval start, end;
+    struct timeval start,end;
     gettimeofday(&start, NULL);
 
     // Read the contents of the FIFO and print them to stdout
@@ -889,6 +769,7 @@ void s_pipe(char *filename, int quiet)
 
     printf("pipe, %ld\n", total_time);
 
+
     // Close the FIFO
     close(fdFIFO);
 
@@ -897,6 +778,7 @@ void s_pipe(char *filename, int quiet)
 
     // Remove the FIFO
     unlink(filename);
+
 }
 
 /**
@@ -1001,6 +883,7 @@ void serverB(int serverPort, int quiet)
     if (quiet == 0)
         printf("Received message2: %s\n", buffer[1]);
 
+
     // getting the hash from client
     unsigned long clientHash;
     if (recv(clientFd, &clientHash, sizeof(clientHash), 0) < 0)
@@ -1009,10 +892,9 @@ void serverB(int serverPort, int quiet)
         exit(1);
     }
 
-    // need to be here(before the socket close)
-    if (!strcmp(buffer[0], "pipe"))
-    {
-
+    //need to be here(before the socket close)
+    if(!strcmp(buffer[0], "pipe")){
+        
         sleep(1);
 
         // Receive message2 from the client
@@ -1027,9 +909,9 @@ void serverB(int serverPort, int quiet)
 
         buffer[1][num_bytes] = '\0';
 
-        // printf("buffer is: %s" ,buffer[1]);
+        //printf("buffer is: %s" ,buffer[1]);
 
-        s_pipe(buffer[1], quiet);
+        s_pipe(buffer[1],quiet);
     }
 
     // Close the connection
@@ -1047,7 +929,7 @@ void serverB(int serverPort, int quiet)
 
     else if (!strcmp(buffer[0], "mmap") && !strcmp(buffer[1], "filename"))
         s_mmap(buffer[1], quiet);
-
+    
     else if (!strcmp(buffer[0], "uds") && !strcmp(buffer[1], "dgram"))
         s_uds_dgram(quiet);
 

@@ -5,7 +5,7 @@ all: stnc
 
 .PHONY : clean
 clean:
-	rm stnc
+	rm stnc *.txt
 
 stnc: stnc.c partA.c serverB.c clientB.c headers.h
 	$(CC) $(FLAGS) stnc stnc.c partA.c serverB.c clientB.c headers.h

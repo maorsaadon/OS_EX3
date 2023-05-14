@@ -6,14 +6,14 @@
  * The generated data consists of random strings of length 1024 repeated multiple times.
  * Each string is written to the file using fprintf.
  */
-FILE *generate_data_to_file()
+FILE* generate_data_to_file()
 {
     srand(time(NULL)); // Initialization, should only be called once.
     FILE *fp = fopen(FILE_NAME, "w+");
     if (fp == NULL)
     {
         perror("fopen() failed\n");
-        exit(-1);
+        exit(1);
     }
     for (size_t i = 0; i < FILE_SIZE - 1; i++)
     {
@@ -26,22 +26,24 @@ FILE *generate_data_to_file()
     return fp;
 }
 
-unsigned long hash(FILE *file)
-{
-    unsigned long sum = 0;
-    int byte;
+unsigned long hash(FILE *fp) {
 
-    while ((byte = getc(file)) != EOF)
+    unsigned long hash = 5381;
+    int c;
+    for (size_t i = 0; i < FILE_SIZE - 1; i++)
     {
-        sum += byte;
+        c = getc(fp);
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
     }
+    fseek(fp, 0, SEEK_SET);
 
-    return sum;
+    return hash;
 }
 
 /**
  * Connects to a server using IPv4 and TCP protocol.
  * Reads data from a file named "data.txt" and sends it to the server.
+ *
  * @param serverIp   The IP address of the server.
  * @param serverPort The port number of the server.
  */
@@ -87,34 +89,8 @@ void c_ipv4_tcp(char *serverIp, int serverPort)
         exit(1);
     }
 
-    // calc time
-    //  Get the start time
-    struct timeval start;
-    gettimeofday(&start, NULL);
-
-    // Create a buffer to hold the start time
     char buffer[BUFFER_SIZE] = {0};
-    long start_time_buffer[2];
-    start_time_buffer[0] = start.tv_sec;
-    start_time_buffer[1] = start.tv_usec;
-
-    // Send the start time to the server
-    if (send(clientFd, &start_time_buffer[0], sizeof(start_time_buffer[0]), 0) == -1)
-    {
-        printf("send() failed\n");
-        close(clientFd);
-        close(file_fd);
-        exit(-1);
-    }
-
-    if (send(clientFd, &start_time_buffer[1], sizeof(start_time_buffer[1]), 0) == -1)
-    {
-        printf("send() failed\n");
-        close(clientFd);
-        close(file_fd);
-        exit(-1);
-    }
-
+    
     int bytes_sent;
     while ((bytes_sent = read(file_fd, buffer, BUFFER_SIZE)) > 0)
     {
@@ -198,31 +174,7 @@ void c_ipv6_tcp(char *serverIp, int serverPort)
         exit(-1);
     }
 
-    // Calculate start time
-    struct timeval start;
-    gettimeofday(&start, NULL);
-    // Create a buffer to hold the start time
-    long start_time_buffer[2];
-    start_time_buffer[0] = start.tv_sec;
-    start_time_buffer[1] = start.tv_usec;
-
-    // Send the start time to the server
-    if (send(clientFd, &start_time_buffer[0], sizeof(start_time_buffer[0]), 0) == -1)
-    {
-        perror("send() failed\n");
-        close(clientFd);
-        fclose(of);
-        exit(-1);
-    }
-
-    if (send(clientFd, &start_time_buffer[1], sizeof(start_time_buffer[1]), 0) == -1)
-    {
-        perror("send() failed\n");
-        close(clientFd);
-        fclose(of);
-        exit(-1);
-    }
-
+    
     char buffer[BUFFER_SIZE];
     size_t nbytes = 0;
     while ((nbytes = fread(buffer, sizeof(char), sizeof(buffer), of)) > 0)
@@ -245,7 +197,7 @@ void c_ipv6_tcp(char *serverIp, int serverPort)
  * Reads data from a file named "data.txt" and sends it to the server.
  * @param serverIp The IP address of the server.
  * @param serverPort The port number of the server.
- */
+*/
 void c_ipv4_udp(char *serverIp, int serverPort)
 {
     // Create socket
@@ -283,32 +235,7 @@ void c_ipv4_udp(char *serverIp, int serverPort)
     fds[1].events = POLLIN;
     int nfds = 2;
 
-    // Get the start time
-    struct timeval start;
-    gettimeofday(&start, NULL);
-
-    // Create a buffer to hold the start time
-    long start_time_buffer[2];
-    start_time_buffer[0] = start.tv_sec;
-    start_time_buffer[1] = start.tv_usec;
-
-    // Send the start time to the server
-    if (sendto(clientFd, &start_time_buffer[0], sizeof(start_time_buffer[0]), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1)
-    {
-        perror("send() failed\n");
-        close(clientFd);
-        fclose(of);
-        exit(-1);
-    }
-
-    if (sendto(clientFd, &start_time_buffer[1], sizeof(start_time_buffer[1]), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1)
-    {
-        perror("send() failed\n");
-        close(clientFd);
-        fclose(of);
-        exit(-1);
-    }
-
+    
     while (1)
     {
         int pull = poll(fds, nfds, -1);
@@ -362,7 +289,7 @@ void c_ipv4_udp(char *serverIp, int serverPort)
  * Reads data from a file named "data.txt" and sends it to the server.
  * @param serverIp The IPv6 address of the server.
  * @param serverPort The port number of the server.
- */
+*/
 void c_ipv6_udp(char *serverIp, int serverPort)
 {
     int clientFd = socket(AF_INET6, SOCK_DGRAM, 0);
@@ -397,29 +324,6 @@ void c_ipv6_udp(char *serverIp, int serverPort)
     fds[1].fd = fileno(fp);
     fds[1].events = POLLIN;
     int nfds = 2;
-
-    struct timeval start = {0};
-    gettimeofday(&start, NULL);
-
-    long buffer_time[2] = {0};
-    buffer_time[0] = start.tv_sec;
-    buffer_time[1] = start.tv_usec;
-
-    if (sendto(clientFd, &buffer_time[0], sizeof(buffer_time[0]), 0, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in6)) == -1)
-    {
-        perror("send() failed\n");
-        close(clientFd);
-        fclose(fp);
-        exit(-1);
-    }
-
-    if (sendto(clientFd, &buffer_time[1], sizeof(buffer_time[1]), 0, (struct sockaddr *)&serverAddress, sizeof(struct sockaddr_in6)) == -1)
-    {
-        perror("send() failed\n");
-        close(clientFd);
-        fclose(fp);
-        exit(-1);
-    }
 
     char buffer[BUFFER_SIZE] = {0};
     while (1)
@@ -475,7 +379,7 @@ void c_ipv6_udp(char *serverIp, int serverPort)
  * Reads data from a file named "data.txt" and sends it to the server.
  * @param serverIp The IP address of the server.
  * @param serverPort The port number of the server.
- */
+*/
 void c_uds_dgram(char *serverIp, int serverPort)
 {
 
@@ -504,25 +408,6 @@ void c_uds_dgram(char *serverIp, int serverPort)
         exit(1);
     }
 
-    struct timeval start;
-    gettimeofday(&start, NULL);
-
-    long buffer_time[MAX_EVENTS];
-    buffer_time[0] = start.tv_sec;
-    buffer_time[1] = start.tv_usec;
-
-    if (sendto(clientFd, &buffer_time[0], sizeof(buffer_time[0]), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1)
-    {
-        perror("sendto() failed\n");
-        exit(1);
-    }
-
-    if (sendto(clientFd, &buffer_time[1], sizeof(buffer_time[1]), 0, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1)
-    {
-        perror("sendto() failed\n");
-        exit(1);
-    }
-
     char buffer[BUFFER_SIZE] = {0};
     while (fgets(buffer, sizeof(buffer), fp) != NULL)
     {
@@ -547,7 +432,7 @@ void c_uds_dgram(char *serverIp, int serverPort)
 /**
  * Connects to a server using Unix Domain Stream protocol.
  * Reads data from a file named "data.txt" and sends it to the server using a Unix Domain Stream socket.
- */
+*/
 void c_uds_stream()
 {
     int clientFd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -584,29 +469,6 @@ void c_uds_stream()
         exit(1);
     }
 
-    struct timeval start;
-    gettimeofday(&start, NULL);
-
-    long buffer_time[2] = {0};
-    buffer_time[0] = start.tv_sec;
-    buffer_time[1] = start.tv_usec;
-
-    if (send(clientFd, &buffer_time[0], sizeof(buffer_time[0]), 0) == -1)
-    {
-        perror("send() failed\n");
-        fclose(fp);
-        close(clientFd);
-        exit(-1);
-    }
-
-    if (send(clientFd, &buffer_time[1], sizeof(buffer_time[1]), 0) == -1)
-    {
-        perror("send() failed\n");
-        fclose(fp);
-        close(clientFd);
-        exit(-1);
-    }
-
     char buffer[BUFFER_SIZE] = {0};
 
     while (fgets(buffer, sizeof(buffer), fp) != NULL)
@@ -629,8 +491,8 @@ void c_uds_stream()
  * Sends data to a server using the Memory-Mapped File technique.
  * Reads data from a file named "data.txt" and sends it to the server.
  * @param serverPort The port number of the server.
- */
-void c_mmap(char *param)
+*/
+void c_mmap(char* param)
 {
 
     int fd = open("data.txt", O_RDONLY);
@@ -668,9 +530,9 @@ void c_mmap(char *param)
         shm_unlink(param);
         exit(1);
     }
-    printf("size: %ld\n", size);
-    printf("%ld\n", read(fd, addr, size));
-    perror("read");
+    // printf("size: %ld\n",size);
+    // printf("%ld\n",read(fd, addr, size));
+    // perror("read");
 
     close(fd);
 }
@@ -678,7 +540,7 @@ void c_mmap(char *param)
 /**
  * Sends data to a server using a named pipe (FIFO).
  * Reads data from a file named "data.txt" and sends it to the server.
- */
+*/
 void c_pipe(char* param , FILE* fp)
 {
     
@@ -723,7 +585,7 @@ void c_pipe(char* param , FILE* fp)
  * @param serverPort The port number of the server.
  * @param type The type of connection protocol (e.g., "ipv4", "ipv6", "mmap", "pipe", "uds").
  * @param param The parameter associated with the connection protocol.
- */
+*/
 void clientB(char *serverIp, int serverPort, char *type, char *param)
 {
     // create file that 100mb size
@@ -757,6 +619,9 @@ void clientB(char *serverIp, int serverPort, char *type, char *param)
         close(clientFd);
         exit(-1);
     }
+
+    // printf("message1: %s\n", type);
+    // printf("message2: %s\n", param);
 
     if (send(clientFd, type, strlen(type), 0) == -1)
     {
